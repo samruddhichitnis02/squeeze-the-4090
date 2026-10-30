@@ -7,3 +7,4 @@ numpy
 pandas
 matplotlib
 accelerate
+bitsandbytes==0.50.2

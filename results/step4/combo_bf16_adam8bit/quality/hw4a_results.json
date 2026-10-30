@@ -1,0 +1,135 @@
+{
+  "row_range": [
+    0,
+    4999
+  ],
+  "n_rows": 5000,
+  "seed": 2122,
+  "split": {
+    "train": 3500,
+    "val": 750,
+    "test": 750
+  },
+  "settings": {
+    "epochs": 4,
+    "batch_size": 32,
+    "lr": 2e-05,
+    "max_len": 64,
+    "precision": "bf16-autocast",
+    "model": "bert-base-uncased",
+    "accum_steps": 1,
+    "micro_batch": 32,
+    "technique": {
+      "bf16": true,
+      "grad_ckpt": false,
+      "optim": "adamw8bit"
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.8885143694196429,
+      "val_loss": 0.725427087465922,
+      "val_acc": 0.672,
+      "epoch_seconds": 4.13733185000001
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.6266224539620535,
+      "val_loss": 0.706022137482961,
+      "val_acc": 0.6906666666666667,
+      "epoch_seconds": 3.846877085000415
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.4028527656282697,
+      "val_loss": 0.837984941482544,
+      "val_acc": 0.6773333333333333,
+      "epoch_seconds": 3.4586914460005573
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.2200421840293067,
+      "val_loss": 1.0077961915334066,
+      "val_acc": 0.6666666666666666,
+      "epoch_seconds": 3.5484055209999497
+    }
+  ],
+  "best_val_acc_epoch": 2,
+  "best_val_loss_epoch": 2,
+  "epochs_past_best": 2,
+  "seconds_past_best": 7.007096967000507,
+  "test_loss": 0.7667867867151896,
+  "test_acc": 0.6586666666666666,
+  "confusion_matrix": [
+    [
+      86,
+      30,
+      4
+    ],
+    [
+      63,
+      238,
+      35
+    ],
+    [
+      21,
+      103,
+      170
+    ]
+  ],
+  "per_class": {
+    "negative": {
+      "precision": 0.5058823529411764,
+      "recall": 0.7166666666666667,
+      "f1": 0.593103448275862,
+      "support": 120
+    },
+    "neutral": {
+      "precision": 0.6415094339622641,
+      "recall": 0.7083333333333334,
+      "f1": 0.6732673267326733,
+      "support": 336
+    },
+    "positive": {
+      "precision": 0.8133971291866029,
+      "recall": 0.5782312925170068,
+      "f1": 0.6759443339960238,
+      "support": 294
+    }
+  },
+  "worst_class": "negative",
+  "misclassified_examples": [
+    [
+      "when you hungry af but Dunkin is closed on Sunday's &amp; conn don't open until 10",
+      "negative",
+      "neutral"
+    ],
+    [
+      "The Brick$quad is the Yankees of 8th period English III with Doc Caputo. #targetonourbacks #hatedbyall #champions",
+      "negative",
+      "neutral"
+    ],
+    [
+      "Hope David Cameron enjoys his breakfast tomorrow and isn't put off thinking about all the people he starves",
+      "negative",
+      "positive"
+    ],
+    [
+      "\"How is it all over already. Ramadan, Eid and Ali's wedding all over.  Back to work tomorrow, back to normal :(\"",
+      "negative",
+      "neutral"
+    ],
+    [
+      "@user @user don't troll people Curtis, tables may turn and lee will hunt you down and take you on telly.... ;)\"",
+      "negative",
+      "neutral"
+    ]
+  ],
+  "n_misclassified_in_worst": 34,
+  "peak_mem_allocated_gb": 1.632551670074463,
+  "peak_mem_reserved_gb": 1.837890625,
+  "train_wallclock_seconds": 16.025423373000194,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "custom_inference_demo": {}
+}

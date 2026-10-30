@@ -1,0 +1,24 @@
+{
+  "batch_size": 4096,
+  "micro_batch": 4096,
+  "accum_steps": 1,
+  "technique": {
+    "bf16": false,
+    "grad_ckpt": true,
+    "optim": "adamw"
+  },
+  "model": "bert-base-uncased",
+  "precision": "fp32",
+  "max_len": 64,
+  "lr": 2e-05,
+  "train_rows": 3500,
+  "warmup_steps": 3,
+  "timed_steps": 6,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "gpu_total_gb": 23.98779296875,
+  "free_gb_at_start": 22.3828125,
+  "usable_gb": 21.263671875,
+  "error": "CUDA out of memory. Tried to allocate 3.00 GiB. GPU 0 has a total capacity of 23.99 GiB of which 944.05 MiB is free. 21.26 GiB allowed; Of the allocated memory 18.88 GiB is allocated by PyTorch, and 2.02 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try sett",
+  "peak_mem_allocated_gb_at_failure": 18.885042667388916,
+  "status": "oom"
+}

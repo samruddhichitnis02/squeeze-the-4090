@@ -1,0 +1,75 @@
+run started: 2026-10-29T18:47:33-07:00
+host: ADS-R15-836-04
+python: Python 3.12.16
+=== [baseline] sweep batch 8 ===
+=== [baseline] sweep batch 16 ===
+=== [baseline] sweep batch 32 ===
+=== [baseline] sweep batch 64 ===
+=== [baseline] sweep batch 128 ===
+=== [baseline] sweep batch 256 ===
+=== [baseline] sweep batch 512 ===
+=== [baseline] sweep batch 1024 ===
+[baseline] out of memory at batch 1024
+=== [baseline] accuracy run ===
+=== [bf16] sweep batch 8 ===
+=== [bf16] sweep batch 16 ===
+=== [bf16] sweep batch 32 ===
+=== [bf16] sweep batch 64 ===
+=== [bf16] sweep batch 128 ===
+=== [bf16] sweep batch 256 ===
+=== [bf16] sweep batch 512 ===
+=== [bf16] sweep batch 1024 ===
+[bf16] out of memory at batch 1024
+=== [bf16] accuracy run ===
+=== [grad_ckpt] sweep batch 8 ===
+=== [grad_ckpt] sweep batch 16 ===
+=== [grad_ckpt] sweep batch 32 ===
+=== [grad_ckpt] sweep batch 64 ===
+=== [grad_ckpt] sweep batch 128 ===
+=== [grad_ckpt] sweep batch 256 ===
+=== [grad_ckpt] sweep batch 512 ===
+=== [grad_ckpt] sweep batch 1024 ===
+=== [grad_ckpt] sweep batch 2048 ===
+=== [grad_ckpt] sweep batch 4096 ===
+[grad_ckpt] out of memory at batch 4096
+=== [grad_ckpt] accuracy run ===
+=== [grad_accum] sweep batch 64 ===
+=== [grad_accum] sweep batch 128 ===
+=== [grad_accum] sweep batch 256 ===
+=== [grad_accum] sweep batch 512 ===
+=== [grad_accum] sweep batch 1024 ===
+=== [grad_accum] sweep batch 2048 ===
+=== [grad_accum] accuracy run ===
+=== [adam8bit] sweep batch 8 ===
+=== [adam8bit] sweep batch 16 ===
+=== [adam8bit] sweep batch 32 ===
+=== [adam8bit] sweep batch 64 ===
+=== [adam8bit] sweep batch 128 ===
+=== [adam8bit] sweep batch 256 ===
+=== [adam8bit] sweep batch 512 ===
+=== [adam8bit] sweep batch 1024 ===
+[adam8bit] out of memory at batch 1024
+=== [adam8bit] accuracy run ===
+=== [combo_bf16_adam8bit] sweep batch 8 ===
+=== [combo_bf16_adam8bit] sweep batch 16 ===
+=== [combo_bf16_adam8bit] sweep batch 32 ===
+=== [combo_bf16_adam8bit] sweep batch 64 ===
+=== [combo_bf16_adam8bit] sweep batch 128 ===
+=== [combo_bf16_adam8bit] sweep batch 256 ===
+=== [combo_bf16_adam8bit] sweep batch 512 ===
+=== [combo_bf16_adam8bit] sweep batch 1024 ===
+[combo_bf16_adam8bit] out of memory at batch 1024
+=== [combo_bf16_adam8bit] accuracy run ===
+=== [combo_bf16_ckpt_adam8bit] sweep batch 8 ===
+=== [combo_bf16_ckpt_adam8bit] sweep batch 16 ===
+=== [combo_bf16_ckpt_adam8bit] sweep batch 32 ===
+=== [combo_bf16_ckpt_adam8bit] sweep batch 64 ===
+=== [combo_bf16_ckpt_adam8bit] sweep batch 128 ===
+=== [combo_bf16_ckpt_adam8bit] sweep batch 256 ===
+=== [combo_bf16_ckpt_adam8bit] sweep batch 512 ===
+=== [combo_bf16_ckpt_adam8bit] sweep batch 1024 ===
+=== [combo_bf16_ckpt_adam8bit] sweep batch 2048 ===
+=== [combo_bf16_ckpt_adam8bit] sweep batch 4096 ===
+[combo_bf16_ckpt_adam8bit] out of memory at batch 4096
+=== [combo_bf16_ckpt_adam8bit] accuracy run ===
+run finished: 2026-10-29T19:01:02-07:00

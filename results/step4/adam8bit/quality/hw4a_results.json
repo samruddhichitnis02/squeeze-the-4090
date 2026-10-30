@@ -1,0 +1,135 @@
+{
+  "row_range": [
+    0,
+    4999
+  ],
+  "n_rows": 5000,
+  "seed": 2122,
+  "split": {
+    "train": 3500,
+    "val": 750,
+    "test": 750
+  },
+  "settings": {
+    "epochs": 4,
+    "batch_size": 32,
+    "lr": 2e-05,
+    "max_len": 64,
+    "precision": "fp32",
+    "model": "bert-base-uncased",
+    "accum_steps": 1,
+    "micro_batch": 32,
+    "technique": {
+      "bf16": false,
+      "grad_ckpt": false,
+      "optim": "adamw8bit"
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.8893046892029899,
+      "val_loss": 0.7208307677904765,
+      "val_acc": 0.6773333333333333,
+      "epoch_seconds": 5.813465112000813
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.6240093175683703,
+      "val_loss": 0.7073476972579956,
+      "val_acc": 0.684,
+      "epoch_seconds": 5.453669828000784
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.40642344992501395,
+      "val_loss": 0.8638569663365682,
+      "val_acc": 0.6613333333333333,
+      "epoch_seconds": 5.463939527999173
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.22890100594929286,
+      "val_loss": 0.9829778095881144,
+      "val_acc": 0.6613333333333333,
+      "epoch_seconds": 5.4173698940003305
+    }
+  ],
+  "best_val_acc_epoch": 2,
+  "best_val_loss_epoch": 2,
+  "epochs_past_best": 2,
+  "seconds_past_best": 10.881309421999504,
+  "test_loss": 0.7544552947680155,
+  "test_acc": 0.672,
+  "confusion_matrix": [
+    [
+      89,
+      27,
+      4
+    ],
+    [
+      60,
+      235,
+      41
+    ],
+    [
+      22,
+      92,
+      180
+    ]
+  ],
+  "per_class": {
+    "negative": {
+      "precision": 0.52046783625731,
+      "recall": 0.7416666666666667,
+      "f1": 0.6116838487972509,
+      "support": 120
+    },
+    "neutral": {
+      "precision": 0.6638418079096046,
+      "recall": 0.6994047619047619,
+      "f1": 0.6811594202898551,
+      "support": 336
+    },
+    "positive": {
+      "precision": 0.8,
+      "recall": 0.6122448979591837,
+      "f1": 0.6936416184971098,
+      "support": 294
+    }
+  },
+  "worst_class": "negative",
+  "misclassified_examples": [
+    [
+      "Nuit Blanche is this weekend and with it comes seeing people I miss a lot. WHY ISN'T IT SATURDAY YET?!?! #fb",
+      "negative",
+      "positive"
+    ],
+    [
+      "The Brick$quad is the Yankees of 8th period English III with Doc Caputo. #targetonourbacks #hatedbyall #champions",
+      "negative",
+      "neutral"
+    ],
+    [
+      "\"Scott Walker, who thinks ISIL compares to American labor unions, thinks he knows how to handle China. On Monday,...",
+      "negative",
+      "neutral"
+    ],
+    [
+      "i may have forgotten all the parts in Ultron that didn't involve Chris Evans' ass. is there still a JARVIS in Tony's smart home/suit",
+      "negative",
+      "neutral"
+    ],
+    [
+      "OKC Thunder center Kendrick Perkins may miss the preseason due to a wrist injury",
+      "negative",
+      "neutral"
+    ]
+  ],
+  "n_misclassified_in_worst": 31,
+  "peak_mem_allocated_gb": 1.864884853363037,
+  "peak_mem_reserved_gb": 2.205078125,
+  "train_wallclock_seconds": 23.8732860529999,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "custom_inference_demo": {}
+}

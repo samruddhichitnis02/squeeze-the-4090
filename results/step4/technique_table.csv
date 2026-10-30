@@ -1,0 +1,8 @@
+technique,max_batch_ran,sweep_end,samples_per_sec_at_max,peak_mem_gb_at_max,test_acc
+Baseline (HW4 settings),512,oom_reached,1105.94,20.503,0.6653
+Mixed precision (bf16),512,oom_reached,2306.63,13.86,0.6653
+Gradient checkpointing,2048,oom_reached,823.27,13.856,0.6653
+Gradient accumulation (micro-batch 64),2048,cap_reached,1027.58,4.141,0.6667
+8-bit optimiser,512,oom_reached,1081.28,19.896,0.672
+Combination A: bf16 + 8-bit optimiser,512,oom_reached,2278.88,13.243,0.6587
+Combination B: bf16 + checkpointing + 8-bit optimiser,2048,oom_reached,1854.56,10.927,0.6587

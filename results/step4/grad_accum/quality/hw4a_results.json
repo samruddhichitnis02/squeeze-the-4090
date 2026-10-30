@@ -1,0 +1,135 @@
+{
+  "row_range": [
+    0,
+    4999
+  ],
+  "n_rows": 5000,
+  "seed": 2122,
+  "split": {
+    "train": 3500,
+    "val": 750,
+    "test": 750
+  },
+  "settings": {
+    "epochs": 4,
+    "batch_size": 32,
+    "lr": 2e-05,
+    "max_len": 64,
+    "precision": "fp32",
+    "model": "bert-base-uncased",
+    "accum_steps": 4,
+    "micro_batch": 8,
+    "technique": {
+      "bf16": false,
+      "grad_ckpt": false,
+      "optim": "adamw"
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.892731472832816,
+      "val_loss": 0.745585559686025,
+      "val_acc": 0.672,
+      "epoch_seconds": 9.13845885399951
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.6355469335147312,
+      "val_loss": 0.6733978670438131,
+      "val_acc": 0.6946666666666667,
+      "epoch_seconds": 8.792139607000536
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.413424943617412,
+      "val_loss": 0.8275436930656433,
+      "val_acc": 0.664,
+      "epoch_seconds": 8.833405755000058
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.22856409085222654,
+      "val_loss": 1.1245864493052165,
+      "val_acc": 0.632,
+      "epoch_seconds": 8.662225464000585
+    }
+  ],
+  "best_val_acc_epoch": 2,
+  "best_val_loss_epoch": 2,
+  "epochs_past_best": 2,
+  "seconds_past_best": 17.495631219000643,
+  "test_loss": 0.7282172102928162,
+  "test_acc": 0.6666666666666666,
+  "confusion_matrix": [
+    [
+      82,
+      31,
+      7
+    ],
+    [
+      53,
+      243,
+      40
+    ],
+    [
+      12,
+      107,
+      175
+    ]
+  ],
+  "per_class": {
+    "negative": {
+      "precision": 0.5578231292517006,
+      "recall": 0.6833333333333333,
+      "f1": 0.6142322097378277,
+      "support": 120
+    },
+    "neutral": {
+      "precision": 0.6377952755905512,
+      "recall": 0.7232142857142857,
+      "f1": 0.6778242677824268,
+      "support": 336
+    },
+    "positive": {
+      "precision": 0.7882882882882883,
+      "recall": 0.5952380952380952,
+      "f1": 0.6782945736434108,
+      "support": 294
+    }
+  },
+  "worst_class": "negative",
+  "misclassified_examples": [
+    [
+      "@user Brock Lesnar may have ended the Undertakers Wrestlemania streak, but he did not keep the Deadman down.\"",
+      "negative",
+      "neutral"
+    ],
+    [
+      "\"Obama secures Iran victory as 34th senator endorses nuclear deal  - Another victory for the march of Islam, well done Hussein Obama\"",
+      "negative",
+      "neutral"
+    ],
+    [
+      "\"On the news\\u002c regarding the \\\"\"\"\"Marijuana March\\\"\"\"\" in #Toronto today: \\\"\"\"\"If you don\\u2019t hear \\u2019em coming\\u002c you\\u2019ll smell them.\\\"\"\"\" Nice...not.\"",
+      "negative",
+      "neutral"
+    ],
+    [
+      "\"Tonight's YouGov: Lab 35, Con 30, UKIP 15, LibDem 9, Green 5. &gt;not one for the Sun's front page or a Nick Robinson analysis I think\"",
+      "negative",
+      "neutral"
+    ],
+    [
+      "\"Stoops admits he wouldn't believe they'd be 2nd in the country in interceptions. \"\"\"\"I gotta be honest there.\"\"\"\"\"",
+      "negative",
+      "neutral"
+    ]
+  ],
+  "n_misclassified_in_worst": 38,
+  "peak_mem_allocated_gb": 2.0647425651550293,
+  "peak_mem_reserved_gb": 2.54296875,
+  "train_wallclock_seconds": 37.10772223499953,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "custom_inference_demo": {}
+}

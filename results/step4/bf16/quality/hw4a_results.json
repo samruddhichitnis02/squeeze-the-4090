@@ -1,0 +1,135 @@
+{
+  "row_range": [
+    0,
+    4999
+  ],
+  "n_rows": 5000,
+  "seed": 2122,
+  "split": {
+    "train": 3500,
+    "val": 750,
+    "test": 750
+  },
+  "settings": {
+    "epochs": 4,
+    "batch_size": 32,
+    "lr": 2e-05,
+    "max_len": 64,
+    "precision": "bf16-autocast",
+    "model": "bert-base-uncased",
+    "accum_steps": 1,
+    "micro_batch": 32,
+    "technique": {
+      "bf16": true,
+      "grad_ckpt": false,
+      "optim": "adamw"
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.889202985559191,
+      "val_loss": 0.7258424480756124,
+      "val_acc": 0.6706666666666666,
+      "epoch_seconds": 3.841144656000324
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.6285380859375,
+      "val_loss": 0.7008144547144572,
+      "val_acc": 0.692,
+      "epoch_seconds": 3.4308773480006494
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.4014414412634713,
+      "val_loss": 0.8326383496920268,
+      "val_acc": 0.6706666666666666,
+      "epoch_seconds": 3.8133059770007094
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.21521015276227679,
+      "val_loss": 0.9722069886525472,
+      "val_acc": 0.6706666666666666,
+      "epoch_seconds": 3.370729307000147
+    }
+  ],
+  "best_val_acc_epoch": 2,
+  "best_val_loss_epoch": 2,
+  "epochs_past_best": 2,
+  "seconds_past_best": 7.184035284000856,
+  "test_loss": 0.7627897138595581,
+  "test_acc": 0.6653333333333333,
+  "confusion_matrix": [
+    [
+      87,
+      29,
+      4
+    ],
+    [
+      55,
+      243,
+      38
+    ],
+    [
+      19,
+      106,
+      169
+    ]
+  ],
+  "per_class": {
+    "negative": {
+      "precision": 0.5403726708074534,
+      "recall": 0.725,
+      "f1": 0.6192170818505338,
+      "support": 120
+    },
+    "neutral": {
+      "precision": 0.6428571428571429,
+      "recall": 0.7232142857142857,
+      "f1": 0.680672268907563,
+      "support": 336
+    },
+    "positive": {
+      "precision": 0.8009478672985783,
+      "recall": 0.5748299319727891,
+      "f1": 0.6693069306930693,
+      "support": 294
+    }
+  },
+  "worst_class": "negative",
+  "misclassified_examples": [
+    [
+      "when you hungry af but Dunkin is closed on Sunday's &amp; conn don't open until 10",
+      "negative",
+      "neutral"
+    ],
+    [
+      "OKC Thunder center Kendrick Perkins may miss the preseason due to a wrist injury",
+      "negative",
+      "neutral"
+    ],
+    [
+      "Hope David Cameron enjoys his breakfast tomorrow and isn't put off thinking about all the people he starves",
+      "negative",
+      "positive"
+    ],
+    [
+      "\"How is it all over already. Ramadan, Eid and Ali's wedding all over.  Back to work tomorrow, back to normal :(\"",
+      "negative",
+      "neutral"
+    ],
+    [
+      "@user @user don't troll people Curtis, tables may turn and lee will hunt you down and take you on telly.... ;)\"",
+      "negative",
+      "neutral"
+    ]
+  ],
+  "n_misclassified_in_worst": 33,
+  "peak_mem_allocated_gb": 2.2548937797546387,
+  "peak_mem_reserved_gb": 2.49609375,
+  "train_wallclock_seconds": 15.56306817299992,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "custom_inference_demo": {}
+}

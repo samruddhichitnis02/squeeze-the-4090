@@ -1,0 +1,28 @@
+# Table HW4.5.1: memory techniques measured one at a time (RTX 4090)
+
+Max batch = largest power-of-two batch that completed the sweep (fresh process per size, allocator capped at the usable VRAM so overflow is a real OOM). For gradient accumulation the number is the largest effective batch tested with micro-batch 64; it is not limited by memory.
+Throughput and peak memory are measured at that max batch. Eval accuracy is test accuracy after a real fine-tune at the HW4 setting: 4 epochs, batch 32, seed 2122 (same as the baseline fine-tune), best-validation-accuracy epoch.
+
+| Technique | Max batch | Throughput (samp/s) | Peak memory (GB) | Eval accuracy |
+|---|---|---|---|---|
+| Baseline (HW4 settings) | 512 | 1105.9 | 20.50 | 66.53% |
+| Mixed precision (bf16) | 512 | 2306.6 | 13.86 | 66.53% |
+| Gradient checkpointing | 2048 | 823.3 | 13.86 | 66.53% |
+| Gradient accumulation (micro-batch 64) | 2048+ (no OOM; sweep cap) | 1027.6 | 4.14 | 66.67% |
+| 8-bit optimiser | 512 | 1081.3 | 19.90 | 67.20% |
+| Combination A: bf16 + 8-bit optimiser | 512 | 2278.9 | 13.24 | 65.87% |
+| Combination B: bf16 + checkpointing + 8-bit optimiser | 2048 | 1854.6 | 10.93 | 65.87% |
+
+# Extended table: the HW4 fine-tune itself (batch 32, 4 epochs)
+
+Training samples/sec = 3,500 x 4 epochs / wall-clock, so it includes per-epoch validation time.
+
+| Technique | Peak memory (GB) | Train wall-clock (s) | Training samples/sec | Best epoch | Best val acc | Test acc |
+|---|---|---|---|---|---|---|
+| Baseline (HW4 settings) | 2.47 | 22.4 | 624 | 2 | 68.53% | 66.53% |
+| Mixed precision (bf16) | 2.25 | 15.6 | 900 | 2 | 69.20% | 66.53% |
+| Gradient checkpointing | 2.07 | 28.3 | 494 | 2 | 68.53% | 66.53% |
+| Gradient accumulation (micro-batch 64) | 2.06 | 37.1 | 377 | 2 | 69.47% | 66.67% |
+| 8-bit optimiser | 1.86 | 23.9 | 586 | 2 | 68.40% | 67.20% |
+| Combination A: bf16 + 8-bit optimiser | 1.63 | 16.0 | 874 | 2 | 69.07% | 65.87% |
+| Combination B: bf16 + checkpointing + 8-bit optimiser | 1.08 | 22.3 | 629 | 2 | 69.07% | 65.87% |

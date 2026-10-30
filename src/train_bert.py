@@ -17,6 +17,8 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
 from transformers import BertForSequenceClassification, BertTokenizer
 
+import techniques
+
 p = argparse.ArgumentParser()
 p.add_argument("--slice", type=int, default=0, dest="slice_start")
 p.add_argument("--n_rows", type=int, default=5000)
@@ -27,7 +29,13 @@ p.add_argument("--lr", type=float, default=2e-5)
 p.add_argument("--max_len", type=int, default=64)
 p.add_argument("--model", default="bert-base-uncased")
 p.add_argument("--out", default="outputs")
+p.add_argument("--accum-steps", type=int, default=1,
+               help="gradient accumulation: micro-batch = batch_size / accum_steps")
+p.add_argument("--skip-save", action="store_true", help="skip saving/reloading the model (technique runs)")
+techniques.add_args(p)
 args = p.parse_args()
+assert args.batch_size % args.accum_steps == 0, "batch size must be divisible by accum steps"
+micro_bs = args.batch_size // args.accum_steps
 
 os.makedirs(args.out, exist_ok=True)
 LABELS = ["negative", "neutral", "positive"]
@@ -68,13 +76,14 @@ def make_ds(ix):
 
 train_ds, val_ds, test_ds = make_ds(tr_idx), make_ds(va_idx), make_ds(te_idx)
 g = torch.Generator().manual_seed(args.seed)
-train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, generator=g)
+train_dl = DataLoader(train_ds, batch_size=micro_bs, shuffle=True, generator=g)
 val_dl = DataLoader(val_ds, batch_size=128)
 test_dl = DataLoader(test_ds, batch_size=128)
 
 # ---------- 2. model ----------
 model = BertForSequenceClassification.from_pretrained(args.model, num_labels=3).to(dev)
-opt = torch.optim.AdamW(model.parameters(), lr=args.lr)
+techniques.prepare_model(model, args)
+opt = techniques.make_optimizer(model, args, args.lr)
 
 
 @torch.no_grad()
@@ -84,7 +93,8 @@ def evaluate(dl):
     preds, gold = [], []
     for ids, am, y in dl:
         ids, am, y = ids.to(dev), am.to(dev), y.to(dev)
-        out = model(input_ids=ids, attention_mask=am, labels=y)
+        with techniques.autocast_ctx(args):
+            out = model(input_ids=ids, attention_mask=am, labels=y)
         tot += out.loss.item() * y.size(0)
         n += y.size(0)
         pr = out.logits.argmax(-1)
@@ -103,14 +113,17 @@ for ep in range(1, args.epochs + 1):
     model.train()
     t_ep = time.perf_counter()
     run, n = 0.0, 0
-    for ids, am, y in train_dl:
+    opt.zero_grad(set_to_none=True)
+    for k, (ids, am, y) in enumerate(train_dl):
         ids, am, y = ids.to(dev), am.to(dev), y.to(dev)
-        opt.zero_grad(set_to_none=True)
-        loss = model(input_ids=ids, attention_mask=am, labels=y).loss
-        loss.backward()
-        opt.step()
+        with techniques.autocast_ctx(args):
+            loss = model(input_ids=ids, attention_mask=am, labels=y).loss
+        (loss / args.accum_steps).backward()
         run += loss.item() * y.size(0)
         n += y.size(0)
+        if (k + 1) % args.accum_steps == 0 or (k + 1) == len(train_dl):
+            opt.step()
+            opt.zero_grad(set_to_none=True)
     torch.cuda.synchronize()
     ep_time = time.perf_counter() - t_ep
     vl, va, _, _ = evaluate(val_dl)
@@ -142,31 +155,33 @@ rng = random.Random(args.seed)
 mis_sample = rng.sample(mis, min(5, len(mis)))
 
 # ---------- 5. save + reload for custom inference ----------
-save_dir = os.path.join(args.out, "bert_sentiment")
-model.save_pretrained(save_dir)
-tok.save_pretrained(save_dir)
-del model
-torch.cuda.empty_cache()
-reloaded = BertForSequenceClassification.from_pretrained(save_dir).to(dev).eval()
-tok2 = BertTokenizer.from_pretrained(save_dir)
+demo = {}
+if not args.skip_save:
+    save_dir = os.path.join(args.out, "bert_sentiment")
+    model.save_pretrained(save_dir)
+    tok.save_pretrained(save_dir)
+    del model
+    torch.cuda.empty_cache()
+    reloaded = BertForSequenceClassification.from_pretrained(save_dir).to(dev).eval()
+    tok2 = BertTokenizer.from_pretrained(save_dir)
 
+    def predict(sentence):
+        enc = tok2(sentence, return_tensors="pt", truncation=True, max_length=args.max_len).to(dev)
+        with torch.no_grad():
+            return LABELS[reloaded(**enc).logits.argmax(-1).item()]
 
-def predict(sentence):
-    enc = tok2(sentence, return_tensors="pt", truncation=True, max_length=args.max_len).to(dev)
-    with torch.no_grad():
-        return LABELS[reloaded(**enc).logits.argmax(-1).item()]
-
-
-demo = {s: predict(s) for s in [
-    "I absolutely love this new phone, best purchase ever!",
-    "Worst customer service I have ever had. Never again.",
-    "The meeting is scheduled for 3pm tomorrow."]}
+    demo = {s: predict(s) for s in [
+        "I absolutely love this new phone, best purchase ever!",
+        "Worst customer service I have ever had. Never again.",
+        "The meeting is scheduled for 3pm tomorrow."]}
 
 results = dict(
     row_range=[start, end - 1], n_rows=len(rows), seed=args.seed,
     split=dict(train=len(tr_idx), val=len(va_idx), test=len(te_idx)),
     settings=dict(epochs=args.epochs, batch_size=args.batch_size, lr=args.lr,
-                  max_len=args.max_len, precision="fp32", model=args.model),
+                  max_len=args.max_len, precision="bf16-autocast" if args.bf16 else "fp32",
+                  model=args.model, accum_steps=args.accum_steps, micro_batch=micro_bs,
+                  technique=techniques.describe(args)),
     history=history,
     best_val_acc_epoch=best["epoch"], best_val_loss_epoch=best_val_loss_epoch,
     epochs_past_best=extra_epochs, seconds_past_best=extra_seconds,

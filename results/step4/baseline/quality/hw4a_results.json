@@ -1,0 +1,135 @@
+{
+  "row_range": [
+    0,
+    4999
+  ],
+  "n_rows": 5000,
+  "seed": 2122,
+  "split": {
+    "train": 3500,
+    "val": 750,
+    "test": 750
+  },
+  "settings": {
+    "epochs": 4,
+    "batch_size": 32,
+    "lr": 2e-05,
+    "max_len": 64,
+    "precision": "fp32",
+    "model": "bert-base-uncased",
+    "accum_steps": 1,
+    "micro_batch": 32,
+    "technique": {
+      "bf16": false,
+      "grad_ckpt": false,
+      "optim": "adamw"
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.889379670892443,
+      "val_loss": 0.7215049516359965,
+      "val_acc": 0.6706666666666666,
+      "epoch_seconds": 5.432003795000128
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.6226621635981968,
+      "val_loss": 0.7060257938702901,
+      "val_acc": 0.6853333333333333,
+      "epoch_seconds": 5.097140202999981
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.4059085884775434,
+      "val_loss": 0.844856687227885,
+      "val_acc": 0.6733333333333333,
+      "epoch_seconds": 5.117093193999608
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.22395594905103955,
+      "val_loss": 0.9549283410708109,
+      "val_acc": 0.6706666666666666,
+      "epoch_seconds": 5.103602931999376
+    }
+  ],
+  "best_val_acc_epoch": 2,
+  "best_val_loss_epoch": 2,
+  "epochs_past_best": 2,
+  "seconds_past_best": 10.220696125998984,
+  "test_loss": 0.7534808522860209,
+  "test_acc": 0.6653333333333333,
+  "confusion_matrix": [
+    [
+      92,
+      24,
+      4
+    ],
+    [
+      69,
+      220,
+      47
+    ],
+    [
+      22,
+      85,
+      187
+    ]
+  ],
+  "per_class": {
+    "negative": {
+      "precision": 0.5027322404371585,
+      "recall": 0.7666666666666667,
+      "f1": 0.6072607260726073,
+      "support": 120
+    },
+    "neutral": {
+      "precision": 0.668693009118541,
+      "recall": 0.6547619047619048,
+      "f1": 0.6616541353383458,
+      "support": 336
+    },
+    "positive": {
+      "precision": 0.7857142857142857,
+      "recall": 0.6360544217687075,
+      "f1": 0.7030075187969925,
+      "support": 294
+    }
+  },
+  "worst_class": "negative",
+  "misclassified_examples": [
+    [
+      "Hope David Cameron enjoys his breakfast tomorrow and isn't put off thinking about all the people he starves",
+      "negative",
+      "positive"
+    ],
+    [
+      "Found FOX NEWS Poll before debate without Rick Perry on it, this maybe why  Polls rigged? VIP",
+      "negative",
+      "neutral"
+    ],
+    [
+      "\"Stoops admits he wouldn't believe they'd be 2nd in the country in interceptions. \"\"\"\"I gotta be honest there.\"\"\"\"\"",
+      "negative",
+      "neutral"
+    ],
+    [
+      "i may have forgotten all the parts in Ultron that didn't involve Chris Evans' ass. is there still a JARVIS in Tony's smart home/suit",
+      "negative",
+      "neutral"
+    ],
+    [
+      "@user do u enjoy his 2nd rate Michael Jackson bit? Honest ques. Like the can't feel face song but god it's so obvious they want MJ 2.0",
+      "negative",
+      "positive"
+    ]
+  ],
+  "n_misclassified_in_worst": 28,
+  "peak_mem_allocated_gb": 2.4663138389587402,
+  "peak_mem_reserved_gb": 3.025390625,
+  "train_wallclock_seconds": 22.442498942000384,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "custom_inference_demo": {}
+}

@@ -1,0 +1,20 @@
+ROW RANGE: train-split rows [0, 4999] inclusive, n=5000
+split: train=3500 val=750 test=750
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at bert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+{"epoch": 1, "train_loss": 0.8885143694196429, "val_loss": 0.725427087465922, "val_acc": 0.672, "epoch_seconds": 5.940093367999907}
+{"epoch": 2, "train_loss": 0.6266224539620535, "val_loss": 0.706022137482961, "val_acc": 0.6906666666666667, "epoch_seconds": 5.184479640000063}
+{"epoch": 3, "train_loss": 0.4028527656282697, "val_loss": 0.837984941482544, "val_acc": 0.6773333333333333, "epoch_seconds": 5.189602637000462}
+{"epoch": 4, "train_loss": 0.2200421840293067, "val_loss": 1.0077961915334066, "val_acc": 0.6666666666666666, "epoch_seconds": 4.9257127890004995}
+RESULTS_JSON_WRITTEN
+{
+  "best_val_acc_epoch": 2,
+  "best_val_loss_epoch": 2,
+  "epochs_past_best": 2,
+  "seconds_past_best": 10.115315426000961,
+  "test_acc": 0.6586666666666666,
+  "peak_mem_allocated_gb": 1.0796551704406738,
+  "train_wallclock_seconds": 22.262278755999432,
+  "worst_class": "negative",
+  "custom_inference_demo": {}
+}

@@ -1,0 +1,29 @@
+{
+  "batch_size": 256,
+  "micro_batch": 64,
+  "accum_steps": 4,
+  "technique": {
+    "bf16": false,
+    "grad_ckpt": false,
+    "optim": "adamw"
+  },
+  "model": "bert-base-uncased",
+  "precision": "fp32",
+  "max_len": 64,
+  "lr": 2e-05,
+  "train_rows": 3500,
+  "warmup_steps": 3,
+  "timed_steps": 20,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "gpu_total_gb": 23.98779296875,
+  "free_gb_at_start": 22.3828125,
+  "usable_gb": 21.263671875,
+  "samples_per_sec": 991.6107555121614,
+  "mean_step_ms": 258.16581615008545,
+  "median_step_ms": 258.2308869996268,
+  "est_epoch_seconds": 3.5296107676769495,
+  "peak_mem_allocated_gb": 4.140834808349609,
+  "peak_mem_reserved_gb": 4.294921875,
+  "final_loss": 0.9244036078453064,
+  "status": "ok"
+}

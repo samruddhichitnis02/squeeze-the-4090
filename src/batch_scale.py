@@ -18,6 +18,8 @@ from datasets import load_dataset
 from sklearn.model_selection import train_test_split
 from transformers import BertForSequenceClassification, BertTokenizer
 
+import techniques
+
 p = argparse.ArgumentParser()
 p.add_argument("--batch-size", type=int, required=True)
 p.add_argument("--warmup-steps", type=int, default=3)
@@ -29,6 +31,9 @@ p.add_argument("--max-len", type=int, default=64)
 p.add_argument("--lr", type=float, default=2e-5)
 p.add_argument("--model", default="bert-base-uncased")
 p.add_argument("--out", default="results/step3/raw")
+p.add_argument("--micro-batch", type=int, default=None,
+               help="gradient accumulation: split each batch into micro-batches of this size")
+techniques.add_args(p)
 a = p.parse_args()
 
 random.seed(a.seed)
@@ -37,6 +42,8 @@ torch.manual_seed(a.seed)
 torch.cuda.manual_seed_all(a.seed)
 dev = torch.device("cuda")
 B = a.batch_size
+micro = a.micro_batch or B
+assert B % micro == 0, "batch size must be divisible by micro-batch"
 
 # Windows/WDDM can silently spill GPU allocations into system RAM instead of raising OOM, which turns the
 # memory wall into an extremely slow run. Cap PyTorch's allocator at 95% of the VRAM actually free at start
@@ -71,7 +78,8 @@ def next_batch():
 
 
 torch.cuda.reset_peak_memory_stats()
-result = dict(batch_size=B, model=a.model, precision="fp32", max_len=a.max_len, lr=a.lr,
+result = dict(batch_size=B, micro_batch=micro, accum_steps=B // micro, technique=techniques.describe(a),
+              model=a.model, precision="bf16-autocast" if a.bf16 else "fp32", max_len=a.max_len, lr=a.lr,
               train_rows=n_train, warmup_steps=a.warmup_steps, timed_steps=a.timed_steps,
               gpu=torch.cuda.get_device_name(0),
               gpu_total_gb=torch.cuda.get_device_properties(0).total_memory / 1024**3,
@@ -79,15 +87,20 @@ result = dict(batch_size=B, model=a.model, precision="fp32", max_len=a.max_len, 
 status = "ok"
 try:
     model = BertForSequenceClassification.from_pretrained(a.model, num_labels=3).to(dev)
-    opt = torch.optim.AdamW(model.parameters(), lr=a.lr)
+    techniques.prepare_model(model, a)
+    opt = techniques.make_optimizer(model, a, a.lr)
     model.train()
 
     def step():
-        ids, am, y = next_batch()
-        ids, am, y = ids.to(dev), am.to(dev), y.to(dev)
+        ids_b, am_b, y_b = next_batch()
         opt.zero_grad(set_to_none=True)
-        loss = model(input_ids=ids, attention_mask=am, labels=y).loss
-        loss.backward()
+        for j in range(0, B, micro):
+            ids = ids_b[j:j + micro].to(dev)
+            am = am_b[j:j + micro].to(dev)
+            y = y_b[j:j + micro].to(dev)
+            with techniques.autocast_ctx(a):
+                loss = model(input_ids=ids, attention_mask=am, labels=y).loss
+            (loss * (micro / B)).backward()
         opt.step()
         return loss
 
