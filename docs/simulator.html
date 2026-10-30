@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inference optimisation lab: interactive simulator</title>
+<style>
+ body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:0;background:#f5f6f8;color:#1c1e21}
+ header{background:#1f2937;color:#fff;padding:14px 22px}
+ header h1{margin:0;font-size:20px} header p{margin:4px 0 0;font-size:13px;color:#cbd5e1}
+ nav{display:flex;gap:4px;padding:10px 22px 0;background:#e5e7eb;flex-wrap:wrap}
+ nav button{border:0;padding:10px 16px;background:#d1d5db;cursor:pointer;border-radius:8px 8px 0 0;font-size:14px}
+ nav button.on{background:#fff;font-weight:600}
+ main{padding:16px 22px;max-width:1100px;margin:0 auto}
+ .card{background:#fff;border-radius:10px;padding:14px 16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+ .row{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:8px 0}
+ label{font-size:13px;color:#374151} select,input[type=range]{margin-left:8px}
+ .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}
+ .stat{background:#f3f4f6;border-radius:8px;padding:8px 10px} .stat b{display:block;font-size:19px}
+ .stat span{font-size:12px;color:#6b7280}
+ .ok{color:#047857} .bad{color:#b91c1c} .warn{color:#b45309}
+ .note{font-size:12.5px;color:#4b5563;margin-top:8px;line-height:1.45}
+ canvas{max-width:100%;background:#fff;border:1px solid #e5e7eb;border-radius:8px}
+ button.act{padding:7px 14px;border:0;border-radius:6px;background:#2563eb;color:#fff;cursor:pointer;font-size:14px}
+ .tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:10px;background:#dbeafe;color:#1e40af;margin-left:6px}
+ .tag.sim{background:#fef3c7;color:#92400e}
+</style></head><body>
+<header><h1>Inference optimisation lab: interactive simulator</h1>
+<p>RTX 4090, BERT fine-tuning and Qwen2.5-1.5B serving. Tabs 1 and 2 show <b>measured</b> numbers from this repository; tab 3 is a <b>simulation</b>.</p></header>
+<nav><button id="t1" class="on">1. Training memory wall <span class="tag">measured</span></button>
+<button id="t2">2. Serving under load <span class="tag">measured</span></button>
+<button id="t3">3. Batching simulator <span class="tag sim">simulation</span></button></nav>
+<main>
+<section id="p1">
+ <div class="card"><div class="row">
+  <label>Technique <select id="cfg"></select></label>
+  <label>Batch size <input id="bs" type="range" min="0" max="9" step="1" value="5"><b id="bsv"></b></label></div>
+  <div class="grid" id="s1"></div><div class="note" id="n1"></div></div>
+ <div class="card"><canvas id="c1" width="1000" height="360"></canvas>
+  <div class="note">Each line is one technique, thick = selected. Red x = a measured out-of-memory failure. Dotted line = usable VRAM cap
+  (PyTorch is capped at 95% of the memory free at start, so overflow is a real error). Only combinations that were actually run are shown.</div></div>
+</section>
+<section id="p2" style="display:none">
+ <div class="card"><div class="row">
+  <label>Precision <select id="prec"><option value="bf16">bf16</option><option value="fp16">fp16</option><option value="fp8">fp8 weights</option></select></label>
+  <label>Offered load <input id="rate" type="range" min="0" max="12" step="1" value="6"><b id="ratev"></b></label></div>
+  <div class="grid" id="s2"></div><div class="note" id="n2"></div></div>
+ <div class="card"><canvas id="c2" width="1000" height="360"></canvas>
+  <div class="note">Open-loop Poisson arrivals, 128 output tokens per request, Qwen2.5-1.5B on vLLM 0.32. Latency is flat until near capacity, then queueing
+  makes it explode. The online plateau (about 18 to 22k tokens/s) is set by the Python API stack, not the GPU (engine-only: 28.7k tokens/s).</div></div>
+</section>
+<section id="p3" style="display:none">
+ <div class="card"><div class="row">
+  <label>Arrival rate (req/s) <input id="srate" type="range" min="1" max="260" value="96"><b id="srv"></b></label>
+  <label>Max sequences in flight <input id="scap" type="range" min="4" max="256" value="256"><b id="scv"></b></label>
+  <label>Output tokens <input id="sout" type="range" min="16" max="256" value="128" step="16"><b id="sov"></b></label>
+  <button class="act" id="run">Run simulation</button></div>
+  <div class="grid" id="s3"></div><div class="note" id="n3"></div></div>
+ <div class="card"><canvas id="c3" width="1000" height="360"></canvas>
+  <div class="note">Left: one cell per sequence slot (filled = being decoded). Bar: requests waiting. Line: queue length over simulated time.
+  Model: each decode step takes <span id="mdl"></span> ms, with N requests in flight (fitted to the measured bf16 load test).
+  It tracks measured median latency within about 8% up to 128 req/s, and it knows nothing about the HTTP/Python stack that limits the real server at about 140 req/s.</div></div>
+</section>
+</main>
+<script>
+const DATA = {"cap_gb": 21.263671875, "full_finetune_samples": 95790, "train": {"baseline": {"label": "Baseline (fp32)", "points": [{"batch": 8, "status": "ok", "sps": 320.2119848172807, "mem": 2.0647430419921875}, {"batch": 16, "status": "ok", "sps": 490.19459763662826, "mem": 2.0878214836120605}, {"batch": 32, "status": "ok", "sps": 669.7968323880513, "mem": 2.4668025970458984}, {"batch": 64, "status": "ok", "sps": 876.4287452392674, "mem": 3.7140254974365234}, {"batch": 128, "status": "ok", "sps": 971.7925678537565, "mem": 6.087587833404541}, {"batch": 256, "status": "ok", "sps": 1045.5924784098504, "mem": 10.935611248016357}, {"batch": 512, "status": "ok", "sps": 1105.936903825371, "mem": 20.50299596786499}, {"batch": 1024, "status": "oom"}]}, "bf16": {"label": "Mixed precision (bf16)", "points": [{"batch": 8, "status": "ok", "sps": 269.63474073075923, "mem": 2.0680384635925293}, {"batch": 16, "status": "ok", "sps": 467.9933080643987, "mem": 2.0941691398620605}, {"batch": 32, "status": "ok", "sps": 1090.0143563424992, "mem": 2.254894256591797}, {"batch": 64, "status": "ok", "sps": 1505.5774504828794, "mem": 3.0347094535827637}, {"batch": 128, "status": "ok", "sps": 2087.1004102993784, "mem": 4.5481858253479}, {"batch": 256, "status": "ok", "sps": 2234.622541326101, "mem": 7.64415168762207}, {"batch": 512, "status": "ok", "sps": 2306.6267954743475, "mem": 13.859729766845703}, {"batch": 1024, "status": "oom"}]}, "grad_ckpt": {"label": "Gradient checkpointing", "points": [{"batch": 8, "status": "ok", "sps": 218.48560970952101, "mem": 2.0624232292175293}, {"batch": 16, "status": "ok", "sps": 375.08315344498385, "mem": 2.0844035148620605}, {"batch": 32, "status": "ok", "sps": 554.0015029519191, "mem": 2.0654983520507812}, {"batch": 64, "status": "ok", "sps": 688.4465518205226, "mem": 2.0808749198913574}, {"batch": 128, "status": "ok", "sps": 747.2761755671019, "mem": 2.077129364013672}, {"batch": 256, "status": "ok", "sps": 764.0492430193365, "mem": 2.8372974395751953}, {"batch": 512, "status": "ok", "sps": 803.6774875392737, "mem": 4.402406692504883}, {"batch": 1024, "status": "ok", "sps": 814.8182260114498, "mem": 7.557195663452148}, {"batch": 2048, "status": "ok", "sps": 823.2669013910596, "mem": 13.85557746887207}, {"batch": 4096, "status": "oom"}]}, "grad_accum": {"label": "Gradient accumulation (micro-batch 64)", "points": [{"batch": 64, "status": "ok", "sps": 890.5509996694248, "mem": 3.7140254974365234}, {"batch": 128, "status": "ok", "sps": 959.3064723848887, "mem": 4.140834808349609}, {"batch": 256, "status": "ok", "sps": 991.6107555121614, "mem": 4.140834808349609}, {"batch": 512, "status": "ok", "sps": 1013.2592516117224, "mem": 4.140834808349609}, {"batch": 1024, "status": "ok", "sps": 1023.6097429850214, "mem": 4.140834808349609}, {"batch": 2048, "status": "ok", "sps": 1027.5848979264872, "mem": 4.140834808349609}]}, "adam8bit": {"label": "8-bit optimiser", "points": [{"batch": 8, "status": "ok", "sps": 241.5657681933333, "mem": 1.048499584197998}, {"batch": 16, "status": "ok", "sps": 412.2416088771524, "mem": 1.253758430480957}, {"batch": 32, "status": "ok", "sps": 627.3432286581689, "mem": 1.8653736114501953}, {"batch": 64, "status": "ok", "sps": 852.7639354642699, "mem": 3.0695886611938477}, {"batch": 128, "status": "ok", "sps": 962.9448934804692, "mem": 5.479684352874756}, {"batch": 256, "status": "ok", "sps": 1028.777495781233, "mem": 10.318957805633545}, {"batch": 512, "status": "ok", "sps": 1081.2797877035093, "mem": 19.896352291107178}, {"batch": 1024, "status": "oom"}]}, "combo_bf16_adam8bit": {"label": "bf16 + 8-bit optimiser", "points": [{"batch": 8, "status": "ok", "sps": 244.8980241568361, "mem": 1.0497188568115234}, {"batch": 16, "status": "ok", "sps": 520.7061671219996, "mem": 1.2335281372070312}, {"batch": 32, "status": "ok", "sps": 966.5946417224674, "mem": 1.632551670074463}, {"batch": 64, "status": "ok", "sps": 1375.8887851884592, "mem": 2.4227828979492188}, {"batch": 128, "status": "ok", "sps": 1954.1433783756136, "mem": 3.935194969177246}, {"batch": 256, "status": "ok", "sps": 2176.757367190484, "mem": 7.0318145751953125}, {"batch": 512, "status": "ok", "sps": 2278.879688991314, "mem": 13.2432861328125}, {"batch": 1024, "status": "oom"}]}, "combo_bf16_ckpt_adam8bit": {"label": "bf16 + checkpointing + 8-bit optimiser", "points": [{"batch": 8, "status": "ok", "sps": 166.60285187351147, "mem": 1.044959545135498}, {"batch": 16, "status": "ok", "sps": 332.15638734413216, "mem": 1.0530238151550293}, {"batch": 32, "status": "ok", "sps": 638.6424294846045, "mem": 1.0808568000793457}, {"batch": 64, "status": "ok", "sps": 1189.38591783721, "mem": 1.1818199157714844}, {"batch": 128, "status": "ok", "sps": 1633.1495063863924, "mem": 1.3411202430725098}, {"batch": 256, "status": "ok", "sps": 1739.3345336380187, "mem": 1.9349088668823242}, {"batch": 512, "status": "ok", "sps": 1792.9420191323402, "mem": 3.219944953918457}, {"batch": 1024, "status": "ok", "sps": 1840.7514921895795, "mem": 5.790402889251709}, {"batch": 2048, "status": "ok", "sps": 1854.5603654479721, "mem": 10.92749547958374}, {"batch": 4096, "status": "oom"}]}}, "serve": {"bf16": [{"offered": 1, "achieved": 0.9506047160236576, "tok_s": 121.67740365102817, "e2e_p50": 608.9338924994081, "e2e_p99": 815.1926605697734, "ttft_p50": 13.106164000419085, "ttft_p99": 76.68556045036891, "tpot_p50": 4.703380228348815, "goodput": 0.9506047160236576}, {"offered": 2, "achieved": 1.8845806626796173, "tok_s": 241.22632482299102, "e2e_p50": 617.3125010000149, "e2e_p99": 691.4681397190361, "ttft_p50": 13.907024000218371, "ttft_p99": 21.63399239980208, "tpot_p50": 4.740499220463066, "goodput": 1.8845806626796173}, {"offered": 4, "achieved": 3.758845234141991, "tok_s": 481.13218997017486, "e2e_p50": 658.5701739995784, "e2e_p99": 681.1398098289828, "ttft_p50": 14.94172900038393, "ttft_p99": 22.72672146125841, "tpot_p50": 5.069219807088002, "goodput": 3.758845234141991}, {"offered": 8, "achieved": 7.69489702663749, "tok_s": 984.9468194095987, "e2e_p50": 670.5347050001365, "e2e_p99": 677.7690120293119, "ttft_p50": 15.395783999338164, "ttft_p99": 22.663854150250696, "tpot_p50": 5.154248330704939, "goodput": 7.69489702663749}, {"offered": 16, "achieved": 14.964332422015595, "tok_s": 1915.4345500179961, "e2e_p50": 621.0573244998159, "e2e_p99": 671.0231719703916, "ttft_p50": 15.425434500684787, "ttft_p99": 19.893804920393453, "tpot_p50": 4.771517232285529, "goodput": 14.964332422015595}, {"offered": 32, "achieved": 31.020164338126687, "tok_s": 3970.581035280216, "e2e_p50": 631.8346389998624, "e2e_p99": 657.0403254602934, "ttft_p50": 15.982766499291756, "ttft_p99": 25.43739167096647, "tpot_p50": 4.846549586617348, "goodput": 31.020164338126687}, {"offered": 64, "achieved": 62.178303583999565, "tok_s": 7958.822858751944, "e2e_p50": 694.1904195000461, "e2e_p99": 764.8130727205353, "ttft_p50": 18.340142500164802, "ttft_p99": 36.61399373955647, "tpot_p50": 5.313585338576451, "goodput": 62.178303583999565}, {"offered": 96, "achieved": 91.98590360253384, "tok_s": 11774.195661124331, "e2e_p50": 800.1416024999344, "e2e_p99": 837.8561581790018, "ttft_p50": 23.186330499811447, "ttft_p99": 77.46257729979334, "tpot_p50": 6.079819082672865, "goodput": 91.98590360253384}, {"offered": 112.0, "achieved": 106.36951318795957, "tok_s": 13615.297688058825, "e2e_p50": 898.854346999542, "e2e_p99": 984.2857156493301, "ttft_p50": 43.45826950066112, "ttft_p99": 116.15921282917043, "tpot_p50": 6.66781041339228, "goodput": 106.36951318795957}, {"offered": 128, "achieved": 120.50573443657808, "tok_s": 15424.734007881994, "e2e_p50": 994.9111594996793, "e2e_p99": 1361.6101887805053, "ttft_p50": 43.116016498970566, "ttft_p99": 337.60614148079185, "tpot_p50": 7.27598657873945, "goodput": 120.50573443657808}, {"offered": 144.0, "achieved": 132.0305350324389, "tok_s": 16899.90848415218, "e2e_p50": 1148.773587499818, "e2e_p99": 1702.343629740808, "ttft_p50": 83.41005999955087, "ttft_p99": 632.8947185196739, "tpot_p50": 8.419284035436988, "goodput": 124.37276400055745}, {"offered": 160.0, "achieved": 136.15879383824478, "tok_s": 17428.32561129533, "e2e_p50": 2073.3786099999634, "e2e_p99": 3054.499583408924, "ttft_p50": 550.389197498589, "ttft_p99": 1702.320986529121, "tpot_p50": 11.168984846457406, "goodput": 64.08540563320054}, {"offered": 176.0, "achieved": 131.4257515521381, "tok_s": 16822.496198673678, "e2e_p50": 2873.1035739992876, "e2e_p99": 4662.322943840882, "ttft_p50": 1028.01148799972, "ttft_p99": 3431.67313355043, "tpot_p50": 13.645234763775022, "goodput": 44.33428685692126}, {"offered": 192, "achieved": 138.88500359376593, "tok_s": 17777.28046000204, "e2e_p50": 2626.4917464986866, "e2e_p99": 4181.694379309865, "ttft_p50": 793.3494465005424, "ttft_p99": 2824.1061534997607, "tpot_p50": 12.877065133859183, "goodput": 54.81328141833962}, {"offered": 256, "achieved": 142.97721474080663, "tok_s": 18301.08348682325, "e2e_p50": 2685.7094249999136, "e2e_p99": 5152.6483079412355, "ttft_p50": 948.538257999644, "ttft_p99": 4128.435436100117, "tpot_p50": 12.50295315354221, "goodput": 41.27275598851285}, {"offered": 384, "achieved": 138.4995590110335, "tok_s": 17727.94355341229, "e2e_p50": 4605.774976499561, "e2e_p99": 6981.11203879087, "ttft_p50": 3697.455235999769, "ttft_p99": 6027.210960570137, "tpot_p50": 11.232330039371924, "goodput": 27.976910920228768}, {"offered": 512, "achieved": 141.78937203680664, "tok_s": 18149.03962071125, "e2e_p50": 4629.762902500261, "e2e_p99": 7656.067790530287, "ttft_p50": 4079.195486500794, "ttft_p99": 6825.691541799224, "tpot_p50": 12.246188952762111, "goodput": 33.5568180487109}], "fp16": [{"offered": 1, "achieved": 0.9509063814025053, "tok_s": 121.71601681952068, "e2e_p50": 589.5512250008323, "e2e_p99": 743.8796691596325, "ttft_p50": 13.590177500191203, "ttft_p99": 23.47514327078896, "tpot_p50": 4.5244956417385644, "goodput": 0.9509063814025053}, {"offered": 2, "achieved": 1.8846244296613566, "tok_s": 241.23192699665364, "e2e_p50": 592.167261999748, "e2e_p99": 627.9544474597969, "ttft_p50": 13.986955500513432, "ttft_p99": 22.47251576965936, "tpot_p50": 4.5387611023581105, "goodput": 1.8846244296613566}, {"offered": 4, "achieved": 3.7588779732484006, "tok_s": 481.1363805757953, "e2e_p50": 616.4552870004627, "e2e_p99": 633.2719219393948, "ttft_p50": 14.588508999622718, "ttft_p99": 23.15869024994754, "tpot_p50": 4.740417574808587, "goodput": 3.7588779732484006}, {"offered": 8, "achieved": 7.712797568917106, "tok_s": 987.2380888213896, "e2e_p50": 623.0573670000012, "e2e_p99": 635.5127880403597, "ttft_p50": 15.226028000142833, "ttft_p99": 21.610873630052083, "tpot_p50": 4.7939803543280375, "goodput": 7.712797568917106}, {"offered": 16, "achieved": 14.960925980867794, "tok_s": 1914.9985255510776, "e2e_p50": 616.9276584996624, "e2e_p99": 631.0676673593116, "ttft_p50": 15.6277295000109, "ttft_p99": 25.183157390110868, "tpot_p50": 4.733280228347713, "goodput": 14.960925980867794}, {"offered": 32, "achieved": 30.99088702158875, "tok_s": 3966.83353876336, "e2e_p50": 668.1899904997408, "e2e_p99": 708.3906044004107, "ttft_p50": 17.034057500495692, "ttft_p99": 30.011200329518037, "tpot_p50": 5.1215668740199565, "goodput": 30.99088702158875}, {"offered": 64, "achieved": 62.00614851205879, "tok_s": 7936.7870095435255, "e2e_p50": 720.4834025005766, "e2e_p99": 827.4562781894201, "ttft_p50": 21.141308499863953, "ttft_p99": 55.06955956969251, "tpot_p50": 5.489065751972939, "goodput": 62.00614851205879}, {"offered": 96, "achieved": 92.33710025354918, "tok_s": 11819.148832454295, "e2e_p50": 823.2235944997228, "e2e_p99": 926.2109771600444, "ttft_p50": 26.09677849977743, "ttft_p99": 128.7370438697871, "tpot_p50": 6.221071574797438, "goodput": 92.33710025354918}, {"offered": 112.0, "achieved": 106.51481538894959, "tok_s": 13633.896369785547, "e2e_p50": 919.536840499859, "e2e_p99": 983.5527686915702, "ttft_p50": 27.230343500377785, "ttft_p99": 58.21625977963777, "tpot_p50": 7.018889374015225, "goodput": 106.51481538894959}, {"offered": 128, "achieved": 121.11977676361907, "tok_s": 15503.331425743241, "e2e_p50": 881.2640554997415, "e2e_p99": 992.5286990800487, "ttft_p50": 33.3125890001611, "ttft_p99": 107.84984139047083, "tpot_p50": 6.504608838583845, "goodput": 121.11977676361907}, {"offered": 144.0, "achieved": 130.95076714213937, "tok_s": 16761.69819419384, "e2e_p50": 1302.176139999574, "e2e_p99": 1789.4291042696568, "ttft_p50": 80.41425400006119, "ttft_p99": 471.44178787079, "tpot_p50": 9.283039740157118, "goodput": 130.6888656078551}, {"offered": 160.0, "achieved": 139.2696285192707, "tok_s": 17826.51245046665, "e2e_p50": 1744.4285405008486, "e2e_p99": 2203.048202478458, "ttft_p50": 131.8975424992459, "ttft_p99": 741.3176757600013, "tpot_p50": 12.54519168898381, "goodput": 126.92105479056204}, {"offered": 176.0, "achieved": 135.68415528952124, "tok_s": 17367.57187705872, "e2e_p50": 2263.0238704996373, "e2e_p99": 3465.086397291034, "ttft_p50": 470.8083235009326, "ttft_p99": 2374.98554920061, "tpot_p50": 12.899401322832226, "goodput": 69.47028750823488}, {"offered": 192, "achieved": 145.03216985197415, "tok_s": 18564.11774105269, "e2e_p50": 2238.8107299993862, "e2e_p99": 3660.020476590471, "ttft_p50": 558.8749315002133, "ttft_p99": 2567.5253039408017, "tpot_p50": 12.587230480310996, "goodput": 68.74524850983573}, {"offered": 256, "achieved": 143.49779614793894, "tok_s": 18367.717906936185, "e2e_p50": 2724.960459999238, "e2e_p99": 5301.00572400921, "ttft_p50": 1044.6276279999438, "ttft_p99": 4309.214199170947, "tpot_p50": 12.987312433073757, "goodput": 44.771312398156944}, {"offered": 384, "achieved": 141.09669021697573, "tok_s": 18060.376347772893, "e2e_p50": 4490.1735139992525, "e2e_p99": 6868.505243560921, "ttft_p50": 2940.1471694991415, "ttft_p99": 5890.414153999645, "tpot_p50": 12.538885748038261, "goodput": 31.041271847734663}, {"offered": 512, "achieved": 132.60849112453695, "tok_s": 16973.88686394073, "e2e_p50": 4752.218419500423, "e2e_p99": 8404.198443631085, "ttft_p50": 3771.792863000883, "ttft_p99": 7648.485041780568, "tpot_p50": 11.518417748025453, "goodput": 29.262273708147823}], "fp8": [{"offered": 1, "achieved": 0.9522156025901363, "tok_s": 121.88359713153744, "e2e_p50": 507.617862999723, "e2e_p99": 683.3176223394184, "ttft_p50": 12.569936499858159, "ttft_p99": 25.07526004934334, "tpot_p50": 3.896748350383659, "goodput": 0.9522156025901363}, {"offered": 2, "achieved": 1.889817331653266, "tok_s": 241.89661845161805, "e2e_p50": 497.4271304990907, "e2e_p99": 511.11422389922154, "ttft_p50": 12.670832000367227, "ttft_p99": 19.837598610538404, "tpot_p50": 3.821249413389108, "goodput": 1.889817331653266}, {"offered": 4, "achieved": 3.774002210436102, "tok_s": 483.0722829358211, "e2e_p50": 501.64598950050276, "e2e_p99": 509.94179166069443, "ttft_p50": 12.755764000758063, "ttft_p99": 20.546378150229415, "tpot_p50": 3.850308354331206, "goodput": 3.774002210436102}, {"offered": 8, "achieved": 7.756914734927569, "tok_s": 992.8850860707288, "e2e_p50": 506.2320999995791, "e2e_p99": 524.1710473707099, "ttft_p50": 13.314644999809389, "ttft_p99": 23.210241890301393, "tpot_p50": 3.8776003070886973, "goodput": 7.756914734927569}, {"offered": 16, "achieved": 15.028901072246187, "tok_s": 1923.699337247512, "e2e_p50": 516.1180120003337, "e2e_p99": 590.8799967500454, "ttft_p50": 14.231305999601318, "ttft_p99": 33.64261402066404, "tpot_p50": 3.9431861929173695, "goodput": 15.028901072246187}, {"offered": 32, "achieved": 31.175243393605594, "tok_s": 3990.431154381516, "e2e_p50": 555.8023755002068, "e2e_p99": 607.7645272794507, "ttft_p50": 15.793209999173996, "ttft_p99": 29.065199919987208, "tpot_p50": 4.25064487401647, "goodput": 31.175243393605594}, {"offered": 64, "achieved": 62.38692899165817, "tok_s": 7985.526910932246, "e2e_p50": 693.6701979993813, "e2e_p99": 750.5788078098885, "ttft_p50": 20.45623499998328, "ttft_p99": 39.109636779321605, "tpot_p50": 5.289508303146757, "goodput": 62.38692899165817}, {"offered": 96, "achieved": 92.2093629327433, "tok_s": 11802.798455391143, "e2e_p50": 963.8990035000461, "e2e_p99": 1001.0696653695777, "ttft_p50": 28.585411499989277, "ttft_p99": 69.77907292901362, "tpot_p50": 7.332622047236893, "goodput": 92.2093629327433}, {"offered": 112.0, "achieved": 106.3164104447922, "tok_s": 13608.500536933401, "e2e_p50": 1045.252623000124, "e2e_p99": 1144.88624159947, "ttft_p50": 35.199623000153224, "ttft_p99": 82.06472396119352, "tpot_p50": 7.897666023625531, "goodput": 106.3164104447922}, {"offered": 128, "achieved": 119.8086477237123, "tok_s": 15335.506908635174, "e2e_p50": 1178.1666754995967, "e2e_p99": 1274.8736383109463, "ttft_p50": 60.666376499284524, "ttft_p99": 154.9952784701236, "tpot_p50": 8.732163291337717, "goodput": 119.8086477237123}, {"offered": 144.0, "achieved": 131.57107265507304, "tok_s": 16841.09729984935, "e2e_p50": 1395.0528505001785, "e2e_p99": 1649.6486742884008, "ttft_p50": 77.12549050029338, "ttft_p99": 358.09377736928576, "tpot_p50": 10.328420153544315, "goodput": 131.57107265507304}, {"offered": 160.0, "achieved": 126.33964949581026, "tok_s": 16171.475135463714, "e2e_p50": 2291.0354015002667, "e2e_p99": 3160.8204092498636, "ttft_p50": 289.37551850049203, "ttft_p99": 1620.7401936708811, "tpot_p50": 13.808753484248538, "goodput": 71.59246804762581}, {"offered": 176.0, "achieved": 124.00636474571397, "tok_s": 15872.814687451388, "e2e_p50": 2779.877320000196, "e2e_p99": 4184.971031608766, "ttft_p50": 842.631505499412, "ttft_p99": 2648.4174840886953, "tpot_p50": 14.384636858267186, "goodput": 41.08744218574656}, {"offered": 192, "achieved": 125.72676328273828, "tok_s": 16093.0257001905, "e2e_p50": 3227.126159499676, "e2e_p99": 4555.009594640796, "ttft_p50": 1201.2149820002378, "ttft_p99": 3255.4100444599135, "tpot_p50": 15.224371692908797, "goodput": 43.83673146458141}, {"offered": 256, "achieved": 134.66384724044485, "tok_s": 17236.97244677694, "e2e_p50": 3212.397409500227, "e2e_p99": 5661.515027610694, "ttft_p50": 1417.1428000008746, "ttft_p99": 4605.421538449227, "tpot_p50": 12.908301633858823, "goodput": 33.21708231930973}, {"offered": 384, "achieved": 132.93687376859592, "tok_s": 17015.919842380277, "e2e_p50": 4727.50232800081, "e2e_p99": 7665.626558781369, "ttft_p50": 2866.251419999571, "ttft_p99": 6397.550131309945, "tpot_p50": 14.209289960626489, "goodput": 25.70112892859521}, {"offered": 512, "achieved": 134.88364236018725, "tok_s": 17265.10622210397, "e2e_p50": 5632.310523999877, "e2e_p99": 8200.355446019857, "ttft_p50": 3744.5132450002347, "ttft_p99": 7198.785878779108, "tpot_p50": 14.466368354329088, "goodput": 26.347271474356578}]}, "seq_cap_measured": {"32": 5987.418873138908, "64": 10533.611002318581, "256": 19165.79988666062}, "engine_only_tok_s": 28753.6, "model": {"a_ms": 4.725754488699744, "c_ms": 0.01988519301664783, "overhead_ms": 10.0}};
+// ==LOGIC==
+const SIZES = [8,16,32,64,128,256,512,1024,2048,4096];
+const RATES = DATA.serve.bf16.map(r => r.offered);
+function lookupTrain(key, batch){
+  const cfg = DATA.train[key];
+  const hit = cfg.points.find(p => p.batch === batch);
+  if (hit) return hit.status === 'ok' ? {state:'ok', mem:hit.mem, sps:hit.sps} : {state:'oom'};
+  const ooms = cfg.points.filter(p => p.status === 'oom').map(p => p.batch);
+  if (ooms.length && batch > Math.min.apply(null, ooms)) return {state:'oom-inferred', from:Math.min.apply(null, ooms)};
+  return {state:'untested'};
+}
+function fullFineTune(sps){ const s = DATA.full_finetune_samples / sps; return {seconds:s, gpuHours:s/3600}; }
+function lookupServe(prec, rate){ return DATA.serve[prec].find(r => r.offered === rate) || null; }
+function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function pctile(arr, q){ if (!arr.length) return NaN; const s = arr.slice().sort((x,y)=>x-y); const k=(s.length-1)*q;
+  const lo=Math.floor(k), hi=Math.min(lo+1,s.length-1); return s[lo]+(s[hi]-s[lo])*(k-lo); }
+function simulate(rate, cap, outLen, duration, seed, frameDt){
+  const rng = mulberry32(seed), A = DATA.model.a_ms, C = DATA.model.c_ms, OV = DATA.model.overhead_ms;
+  const expo = () => -Math.log(1 - rng()) / rate;
+  let t = 0, nxt = expo(), waiting = [], head = 0, active = [], lat = [], frames = [], nextFrame = 0, done = 0, tokens = 0;
+  while (t < duration){
+    while (nxt <= t){ waiting.push(nxt); nxt += expo(); }
+    while (active.length < cap && head < waiting.length){ active.push({rem:outLen, arr:waiting[head++]}); }
+    if (!active.length){ t = Math.min(nxt, duration); continue; }
+    t += (A + C * active.length) / 1000;
+    tokens += active.length;
+    for (const r of active) r.rem -= 1;
+    const still = [];
+    for (const r of active){ if (r.rem <= 0){ lat.push((t - r.arr) * 1000 + OV); done++; } else still.push(r); }
+    active = still;
+    while (frameDt && nextFrame <= t){ frames.push({t:nextFrame, active:active.length, queue:waiting.length-head, done:done}); nextFrame += frameDt; }
+  }
+  return {p50:pctile(lat,.5), p99:pctile(lat,.99), done:done, reqPerSec:done/duration, tokPerSec:tokens/duration,
+          maxQueue:frames.reduce((m,f)=>Math.max(m,f.queue),0), frames:frames};
+}
+// ==UI==
+const $ = id => document.getElementById(id);
+const fmt = (x, d) => (x === null || x === undefined || isNaN(x)) ? 'n/a' : x.toLocaleString('en-US', {maximumFractionDigits:d===undefined?0:d});
+function stat(label, value, cls){ return '<div class="stat"><span>'+label+'</span><b class="'+(cls||'')+'">'+value+'</b></div>'; }
+function lineChart(cv, series, o){
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, L = 62, R = 16, T = 14, B = 40;
+  ctx.clearRect(0,0,W,H); ctx.font = '12px sans-serif';
+  const xs = [].concat.apply([], series.map(s => s.x)), ys = [].concat.apply([], series.map(s => s.y)).filter(v => v > 0);
+  const xmin = o.xmin !== undefined ? o.xmin : Math.min.apply(null, xs), xmax = o.xmax !== undefined ? o.xmax : Math.max.apply(null, xs);
+  const ymin = o.ymin !== undefined ? o.ymin : Math.min.apply(null, ys), ymax = o.ymax !== undefined ? o.ymax : Math.max.apply(null, ys);
+  const fx = v => o.logX ? Math.log(v) : v, fy = v => o.logY ? Math.log(Math.max(v, 1e-9)) : v;
+  const px = v => L + (fx(v) - fx(xmin)) / (fx(xmax) - fx(xmin)) * (W - L - R);
+  const py = v => H - B - (fy(v) - fy(ymin)) / (fy(ymax) - fy(ymin)) * (H - T - B);
+  ctx.strokeStyle = '#e5e7eb'; ctx.fillStyle = '#6b7280'; ctx.lineWidth = 1;
+  (o.xticks || []).forEach(v => { const x = px(v); ctx.beginPath(); ctx.moveTo(x,T); ctx.lineTo(x,H-B); ctx.stroke(); ctx.fillText(String(v), x-8, H-B+16); });
+  (o.yticks || []).forEach(v => { const y = py(v); ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(W-R,y); ctx.stroke(); ctx.fillText(String(v), 6, y+4); });
+  ctx.fillStyle = '#111827'; ctx.fillText(o.xlabel || '', L + (W-L-R)/2 - 60, H-6);
+  ctx.save(); ctx.translate(14, T + (H-T-B)/2 + 40); ctx.rotate(-Math.PI/2); ctx.fillText(o.ylabel || '', 0, 0); ctx.restore();
+  (o.hlines || []).forEach(h => { const y = py(h.y); ctx.setLineDash([4,4]); ctx.strokeStyle = h.color; ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(W-R,y); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = h.color; ctx.fillText(h.label, L+6, y-4); });
+  series.forEach(s => {
+    ctx.strokeStyle = s.color; ctx.lineWidth = s.width || 1.5; ctx.beginPath();
+    s.x.forEach((xv, i) => { const x = px(xv), y = py(s.y[i]); if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+    ctx.stroke();
+    (s.marks || []).forEach(m => { ctx.fillStyle = m.color; ctx.beginPath(); ctx.arc(px(m.x), py(m.y), m.r || 5, 0, 6.2832); ctx.fill(); });
+    (s.crosses || []).forEach(m => { ctx.strokeStyle = '#b91c1c'; ctx.lineWidth = 2.5; const x = px(m.x), y = py(m.y);
+      ctx.beginPath(); ctx.moveTo(x-6,y-6); ctx.lineTo(x+6,y+6); ctx.moveTo(x+6,y-6); ctx.lineTo(x-6,y+6); ctx.stroke(); });
+  });
+  if (o.legend){ let ly = T + 14; o.legend.forEach(l => { ctx.fillStyle = l.color; ctx.fillRect(W-R-190, ly-9, 14, 4); ctx.fillStyle = '#111827'; ctx.fillText(l.label, W-R-170, ly-3); ly += 16; }); }
+}
+// ---- tab 1
+function renderTrain(){
+  const key = $('cfg').value, batch = SIZES[parseInt($('bs').value, 10)];
+  $('bsv').textContent = ' ' + batch;
+  const r = lookupTrain(key, batch);
+  let html = '', note = '';
+  if (r.state === 'ok'){
+    const ft = fullFineTune(r.sps);
+    html = stat('Peak GPU memory', fmt(r.mem,2)+' GB', r.mem > DATA.cap_gb*0.9 ? 'warn' : 'ok') + stat('Throughput', fmt(r.sps)+' samples/s', 'ok')
+      + stat('Full fine-tune (est.)', fmt(ft.seconds)+' s', '') + stat('GPU-hours (est.)', fmt(ft.gpuHours,4), '');
+    note = 'Measured on the RTX 4090. The full fine-tune estimate is 31,930 rows x 3 epochs divided by this throughput (training steps only; the real runs add about 5 to 10% for validation).';
+  } else if (r.state === 'oom'){
+    html = stat('Result', 'OUT OF MEMORY', 'bad'); note = 'Measured: this batch size failed with a CUDA out-of-memory error.';
+  } else if (r.state === 'oom-inferred'){
+    html = stat('Result', 'would not fit', 'bad'); note = 'Not run: batch ' + r.from + ' already failed for this technique, so larger sizes were not tried.';
+  } else {
+    html = stat('Result', 'not measured', 'warn'); note = 'This size was not run for this technique (gradient accumulation was swept from 64 up to 2048 and capped there).';
+  }
+  $('s1').innerHTML = html; $('n1').textContent = note;
+  const colors = ['#6b7280','#1f77b4','#2ca02c','#d62728','#9467bd','#ff7f0e','#8c564b'];
+  const series = Object.keys(DATA.train).map((k, i) => {
+    const okp = DATA.train[k].points.filter(p => p.status === 'ok');
+    return {x:okp.map(p=>p.batch), y:okp.map(p=>p.mem), color:colors[i%colors.length], width:k===key?4:1.2,
+      crosses:DATA.train[k].points.filter(p=>p.status==='oom').map(p=>({x:p.batch, y:DATA.cap_gb*0.98})),
+      marks:(k===key && r.state==='ok') ? [{x:batch, y:r.mem, color:'#111827', r:7}] : []};
+  });
+  lineChart($('c1'), series, {logX:true, xmin:8, xmax:4096, ymin:0.5, ymax:24, logY:false, xticks:SIZES, yticks:[2,5,10,15,20],
+    xlabel:'batch size (effective)', ylabel:'peak GPU memory (GB)', hlines:[{y:DATA.cap_gb, color:'#b91c1c', label:'usable VRAM ' + fmt(DATA.cap_gb,1) + ' GB'}],
+    legend:Object.keys(DATA.train).map((k,i)=>({color:colors[i%colors.length], label:DATA.train[k].label.slice(0,26)}))});
+}
+// ---- tab 2
+function renderServe(){
+  const prec = $('prec').value, rate = RATES[parseInt($('rate').value, 10)];
+  $('ratev').textContent = ' ' + rate + ' req/s';
+  const r = lookupServe(prec, rate);
+  if (!r){ $('s2').innerHTML = stat('Result', 'no data', 'warn'); $('n2').textContent = 'This precision was not measured at this rate.'; return; }
+  const sla = r.goodput >= 0.95 * r.achieved;
+  $('s2').innerHTML = stat('End-to-end p50 / p99', fmt(r.e2e_p50)+' / '+fmt(r.e2e_p99)+' ms', r.e2e_p99 > 2000 ? 'bad' : 'ok')
+    + stat('Time to first token p50 / p99', fmt(r.ttft_p50)+' / '+fmt(r.ttft_p99)+' ms', r.ttft_p99 > 500 ? 'bad' : 'ok')
+    + stat('Time per output token p50', fmt(r.tpot_p50,1)+' ms', '') + stat('Output throughput', fmt(r.tok_s)+' tokens/s', '')
+    + stat('Achieved / offered', fmt(r.achieved,1)+' / '+rate+' req/s', r.achieved < 0.9*rate ? 'bad' : 'ok')
+    + stat('SLA goodput', fmt(r.goodput,1)+' req/s', sla ? 'ok' : 'bad');
+  $('n2').textContent = 'SLA = time to first token <= 500 ms and time per token <= 50 ms. ' + (sla ? 'At least 95% of requests met it.' : 'Fewer than 95% of requests met it: the server is past its useful capacity.');
+  const rows = DATA.serve[prec], xs = rows.map(x => x.offered);
+  lineChart($('c2'), [
+    {x:xs, y:rows.map(x=>x.e2e_p99), color:'#7570b3', width:2.5, marks:[{x:rate, y:r.e2e_p99, color:'#7570b3', r:7}]},
+    {x:xs, y:rows.map(x=>x.e2e_p50), color:'#1b9e77', width:2.5, marks:[{x:rate, y:r.e2e_p50, color:'#1b9e77', r:7}]}],
+    {logX:true, logY:true, xmin:1, xmax:512, ymin:400, ymax:12000, xticks:[1,4,16,64,256], yticks:[500,1000,2000,5000,10000],
+     xlabel:'offered rate (req/s)', ylabel:'end-to-end latency (ms)', legend:[{color:'#7570b3', label:'p99'}, {color:'#1b9e77', label:'p50'}]});
+}
+// ---- tab 3
+let playTimer = null;
+function runSim(){
+  const rate = parseInt($('srate').value,10), cap = parseInt($('scap').value,10), outLen = parseInt($('sout').value,10);
+  $('srv').textContent = ' ' + rate; $('scv').textContent = ' ' + cap; $('sov').textContent = ' ' + outLen;
+  $('mdl').textContent = fmt(DATA.model.a_ms,2) + ' + ' + fmt(DATA.model.c_ms,4) + ' x N';
+  const res = simulate(rate, cap, outLen, 20, 2122, 0.1);
+  let html = stat('Simulated p50 / p99', fmt(res.p50)+' / '+fmt(res.p99)+' ms', res.p99 > 2000 ? 'bad' : 'ok')
+    + stat('Served', fmt(res.reqPerSec,1)+' req/s', res.reqPerSec < 0.9*rate ? 'bad' : 'ok') + stat('Output throughput', fmt(res.tokPerSec)+' tokens/s', '')
+    + stat('Longest queue', fmt(res.maxQueue)+' requests', res.maxQueue > 20 ? 'bad' : 'ok');
+  $('s3').innerHTML = html;
+  const meas = outLen === 128 ? DATA.seq_cap_measured[String(cap)] : undefined;
+  $('n3').textContent = meas ? ('Measured peak for max-num-seqs ' + cap + ' (real server, short prompts): ' + fmt(meas) + ' tokens/s. The simulation has no HTTP stack, so compare it with the engine-only measurement (' + fmt(DATA.engine_only_tok_s) + ' tokens/s at 256 sequences) at the top end.')
+    : 'Change max sequences to 32, 64 or 256 with 128 output tokens to see the measured value for the real server.';
+  if (playTimer) clearInterval(playTimer);
+  let i = 0; const fr = res.frames;
+  const cv = $('c3'), ctx = cv.getContext('2d');
+  function draw(){
+    const f = fr[Math.min(i, fr.length-1)]; ctx.clearRect(0,0,cv.width,cv.height); ctx.font = '13px sans-serif';
+    const cols = Math.min(cap, 32), rowsN = Math.ceil(cap/cols), cw = Math.min(24, 520/cols), ch = Math.min(24, 200/rowsN);
+    for (let s = 0; s < cap; s++){ const x = 20 + (s % cols) * cw, y = 40 + Math.floor(s / cols) * ch; ctx.fillStyle = s < f.active ? '#2563eb' : '#e5e7eb'; ctx.fillRect(x, y, cw-2, ch-2); }
+    ctx.fillStyle = '#111827'; ctx.fillText('t = ' + f.t.toFixed(1) + ' s   in flight: ' + f.active + ' / ' + cap + '   waiting: ' + f.queue + '   finished: ' + f.done, 20, 22);
+    ctx.fillStyle = '#d97706'; ctx.fillRect(20, 270, Math.min(560, f.queue * 4), 16); ctx.fillStyle = '#111827'; ctx.fillText('queue', 20, 306);
+    const qmax = Math.max(10, res.maxQueue); ctx.strokeStyle = '#d97706'; ctx.beginPath();
+    fr.forEach((g, k) => { const x = 640 + k / fr.length * 340, y = 300 - g.queue / qmax * 220; if (k === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }); ctx.stroke();
+    ctx.fillStyle = '#6b7280'; ctx.fillText('queue length over 20 s (max ' + qmax + ')', 640, 322);
+    ctx.strokeStyle = '#111827'; const px = 640 + Math.min(i, fr.length-1) / fr.length * 340; ctx.beginPath(); ctx.moveTo(px, 80); ctx.lineTo(px, 300); ctx.stroke();
+  }
+  draw();
+  playTimer = setInterval(() => { i += 1; draw(); if (i >= fr.length) clearInterval(playTimer); }, 40);
+}
+// ---- wiring
+function show(n){ ['1','2','3'].forEach(k => { $('p'+k).style.display = (k === n) ? 'block' : 'none'; $('t'+k).className = (k === n) ? 'on' : ''; }); }
+function init(){
+  $('cfg').innerHTML = Object.keys(DATA.train).map(k => '<option value="'+k+'">'+DATA.train[k].label+'</option>').join('');
+  ['t1','t2','t3'].forEach(id => $(id).addEventListener('click', () => { show(id.slice(1)); if (id === 't3') runSim(); }));
+  $('cfg').addEventListener('change', renderTrain); $('bs').addEventListener('input', renderTrain);
+  $('prec').addEventListener('change', renderServe); $('rate').addEventListener('input', renderServe);
+  $('run').addEventListener('click', runSim);
+  ['srate','scap','sout'].forEach(id => $(id).addEventListener('input', () => { $('srv').textContent=' '+$('srate').value; $('scv').textContent=' '+$('scap').value; $('sov').textContent=' '+$('sout').value; }));
+  $('rate').max = String(RATES.length - 1);
+  renderTrain(); renderServe();
+}
+init();
+</script></body></html>
