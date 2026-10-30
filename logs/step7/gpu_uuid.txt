@@ -1,0 +1,1 @@
+GPU 0: NVIDIA GeForce RTX 4090 (UUID: GPU-c5ad1a63-b7c0-1838-5d8f-0df577ec82ce)

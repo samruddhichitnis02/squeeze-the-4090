@@ -1,0 +1,32 @@
+run started: 2026-10-29T20:58:02-07:00
+host: ADS-R15-836-04
+python: Python 3.12.16
+model: Qwen/Qwen2.5-1.5B-Instruct
+=== [base] vllm serve --max-num-seqs 256 ===
+[base] load test workload=short rates=32 96 160 256
+[base] load test workload=longprefix rates=8 16 32 64
+=== [no_prefix_cache] vllm serve --max-num-seqs 256 --no-enable-prefix-caching ===
+[no_prefix_cache] load test workload=short rates=32 96 160 256
+[no_prefix_cache] load test workload=longprefix rates=8 16 32 64
+STOP: overload reached at 64.0 req/s
+=== [no_chunked_prefill] vllm serve --max-num-seqs 256 --no-enable-chunked-prefill ===
+[no_chunked_prefill] load test workload=short rates=32 96 160 256
+[no_chunked_prefill] load test workload=longprefix rates=8 16 32 64
+=== [batched_tokens_512] vllm serve --max-num-seqs 256 --max-num-batched-tokens 512 ===
+[batched_tokens_512] load test workload=short rates=32 96 160 256
+[batched_tokens_512] load test workload=longprefix rates=8 16 32 64
+=== [seqs_32] vllm serve --max-num-seqs 32 ===
+[seqs_32] load test workload=short rates=32 96 160 256
+STOP: overload reached at 256.0 req/s
+[seqs_32] load test workload=longprefix rates=8 16 32 64
+=== [seqs_64] vllm serve --max-num-seqs 64 ===
+[seqs_64] load test workload=short rates=32 96 160 256
+[seqs_64] load test workload=longprefix rates=8 16 32 64
+=== [kv_fp8] vllm serve --max-num-seqs 256 --kv-cache-dtype fp8 ===
+FAILED: server for [kv_fp8] did not come up, see logs/step7/server_kv_fp8.log
+=== [weights_fp8] vllm serve --max-num-seqs 256 --quantization fp8 ===
+[weights_fp8] load test workload=short rates=32 96 160 256
+[weights_fp8] load test workload=longprefix rates=8 16 32 64
+=== [weights_fp8_kv_fp8] vllm serve --max-num-seqs 256 --quantization fp8 --kv-cache-dtype fp8 ===
+FAILED: server for [weights_fp8_kv_fp8] did not come up, see logs/step7/server_weights_fp8_kv_fp8.log
+run finished: 2026-10-29T21:25:10-07:00

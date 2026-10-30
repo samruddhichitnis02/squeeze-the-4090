@@ -1,0 +1,9 @@
+run started: 2026-10-29T21:43:06-07:00
+host: ADS-R15-836-04
+python: Python 3.12.16
+model: Qwen/Qwen2.5-1.5B-Instruct
+=== [nocache_nochunk] vllm serve --max-num-seqs 256 --no-enable-prefix-caching --no-enable-chunked-prefill ===
+[nocache_nochunk] load test workload=longprefix rates=8 16 32 64
+=== [nocache_bt512] vllm serve --max-num-seqs 256 --no-enable-prefix-caching --max-num-batched-tokens 512 ===
+[nocache_bt512] load test workload=longprefix rates=8 16 32 64
+run finished: 2026-10-29T21:47:42-07:00

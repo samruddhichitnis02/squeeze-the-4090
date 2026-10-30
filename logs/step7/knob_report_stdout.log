@@ -1,0 +1,40 @@
+# Step 7: serving knob sweep (RTX 4090, Qwen2.5-1.5B-Instruct, vLLM 0.32)
+
+Every configuration: bf16 unless stated, 4 API server processes, 2 client processes, max-model-len 2048, gpu-memory-utilization 0.6, 128 output tokens per request, streamed, open-loop Poisson arrivals, one run per cell.
+Workloads: **short** = short chat prompts (about 41 tokens, decode dominated); **longprefix** = a ~950-token document identical for every request plus a short unique question (prefill and KV-read heavy).
+SLA: TTFT <= 500 ms and TPOT <= 50 ms. SLA capacity = highest tested rate with >= 95% of requests inside the SLA (limited by the small rate grid). Single-run differences under roughly 15 to 20% are within noise (Step 6).
+
+## Workload: short chat prompts
+
+| Configuration | KV cache (tokens) | SLA capacity (req/s) | Peak tok/s | e2e p99 @96 req/s (ms) | e2e p99 @160 req/s (ms) | TTFT p99 @96 (ms) | TTFT p99 @160 (ms) | TPOT p50 @96 (ms) |
+|---|---|---|---|---|---|---|---|---|
+| base (bf16, prefix cache on, chunked prefill on, 256 seqs) | 397968 | 96 | 19166 | 1039 | 2595 | 155 | 1093 | 6.7 |
+| prefix caching off | 397968 | 96 | 17553 | 930 | 3644 | 34 | 2145 | 6.6 |
+| chunked prefill off | 397968 | 96 | 19088 | 926 | 2568 | 33 | 1064 | 6.7 |
+| max-num-batched-tokens 512 | 386448 | 96 | 19333 | 1004 | 2599 | 40 | 1114 | 7.0 |
+| max-num-seqs 32 | 399728 | 32 | 5987 | 15204 | 37092 | 14529 | 36426 | 5.2 |
+| max-num-seqs 64 | 397744 | 32 | 10534 | 3176 | 15149 | 2432 | 14362 | 6.0 |
+| FP8 weights | 425136 | 96 | 17322 | 1070 | 5114 | 38 | 3602 | 7.7 |
+| [Triton attention] bf16 weights, bf16 KV (control) | 386048 | 160 | 21950 | 999 | 1504 | 40 | 55 | 6.6 |
+| [Triton attention] bf16 weights, FP8 KV cache | 772400 | 160 | 22131 | 1145 | 1392 | 47 | 49 | 7.2 |
+| [Triton attention] FP8 weights, bf16 KV (control) | 425200 | 96 | 18685 | 1638 | 4822 | 57 | 3147 | 11.4 |
+| [Triton attention] FP8 weights + FP8 KV cache | 851872 | 96 | 21113 | 1270 | 2101 | 47 | 578 | 8.4 |
+
+## Workload: long shared prefix (~950 prompt tokens)
+
+| Configuration | KV cache (tokens) | SLA capacity (req/s) | Peak tok/s | e2e p99 @32 req/s (ms) | e2e p99 @64 req/s (ms) | TTFT p99 @32 (ms) | TTFT p99 @64 (ms) | TPOT p50 @32 (ms) |
+|---|---|---|---|---|---|---|---|---|
+| base (bf16, prefix cache on, chunked prefill on, 256 seqs) | 397968 | 64 (>= , ladder top) | 7262 | 866 | 1687 | 29 | 56 | 6.0 |
+| prefix caching off | 397968 | 16 | 3110 | 10059 | 31159 | 3141 | 26383 | 48.1 |
+| chunked prefill off | 397968 | 64 (>= , ladder top) | 7262 | 875 | 1523 | 30 | 51 | 6.0 |
+| max-num-batched-tokens 512 | 386448 | 64 (>= , ladder top) | 7269 | 864 | 1645 | 30 | 53 | 6.0 |
+| [prefix cache off] chunked prefill off | 397968 | 16 | 3071 | 8229 | 29700 | 3820 | 26241 | 38.7 |
+| [prefix cache off] max-num-batched-tokens 512 | 399616 | 16 | 3210 | 5663 | 23262 | 3589 | 21275 | 18.7 |
+| max-num-seqs 32 | 399728 | 32 | 4962 | 976 | 9279 | 175 | 8491 | 6.0 |
+| max-num-seqs 64 | 397744 | 32 | 7236 | 880 | 2282 | 29 | 1211 | 6.0 |
+| FP8 weights | 425136 | 64 (>= , ladder top) | 7327 | 663 | 1810 | 27 | 61 | 4.7 |
+| [Triton attention] bf16 weights, bf16 KV (control) | 386048 | 64 (>= , ladder top) | 7287 | 744 | 901 | 31 | 39 | 5.3 |
+| [Triton attention] bf16 weights, FP8 KV cache | 772400 | 64 (>= , ladder top) | 7289 | 744 | 899 | 35 | 40 | 5.3 |
+| [Triton attention] FP8 weights, bf16 KV (control) | 425200 | 64 (>= , ladder top) | 7347 | 832 | 1356 | 49 | 56 | 5.2 |
+| [Triton attention] FP8 weights + FP8 KV cache | 851872 | 64 (>= , ladder top) | 7354 | 735 | 1017 | 37 | 47 | 4.6 |
+

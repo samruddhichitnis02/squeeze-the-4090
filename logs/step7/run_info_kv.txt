@@ -1,0 +1,17 @@
+run started: 2026-10-29T21:27:20-07:00
+host: ADS-R15-836-04
+python: Python 3.12.16
+model: Qwen/Qwen2.5-1.5B-Instruct
+=== [triton_kv_bf16] vllm serve --max-num-seqs 256 --attention-backend TRITON_ATTN ===
+[triton_kv_bf16] load test workload=short rates=32 96 160 256
+[triton_kv_bf16] load test workload=longprefix rates=8 16 32 64
+=== [triton_kv_fp8] vllm serve --max-num-seqs 256 --attention-backend TRITON_ATTN --kv-cache-dtype fp8 ===
+[triton_kv_fp8] load test workload=short rates=32 96 160 256
+[triton_kv_fp8] load test workload=longprefix rates=8 16 32 64
+=== [triton_w8_kv_bf16] vllm serve --max-num-seqs 256 --attention-backend TRITON_ATTN --quantization fp8 ===
+[triton_w8_kv_bf16] load test workload=short rates=32 96 160 256
+[triton_w8_kv_bf16] load test workload=longprefix rates=8 16 32 64
+=== [triton_w8_kv_fp8] vllm serve --max-num-seqs 256 --attention-backend TRITON_ATTN --quantization fp8 --kv-cache-dtype fp8 ===
+[triton_w8_kv_fp8] load test workload=short rates=32 96 160 256
+[triton_w8_kv_fp8] load test workload=longprefix rates=8 16 32 64
+run finished: 2026-10-29T21:41:21-07:00

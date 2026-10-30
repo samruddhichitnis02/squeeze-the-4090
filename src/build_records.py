@@ -13,6 +13,13 @@ STEPS = [
     ("step6", "Online load test, bf16/fp16/fp8 (main grid)", "bash scripts/step6_run.sh"),
     ("step6_fine", "Online load test, finer rate grid", "RATES='112 144 160 176' SUFFIX=_fine bash scripts/step6_run.sh"),
     ("step6_engine", "Engine-only control (no HTTP), bf16 and fp8", "bash scripts/step6_engine_check.sh"),
+    ("step7_diag", "Bottleneck diagnostic: API servers x client processes", "bash scripts/step7_diag.sh"),
+    ("step7_diag2", "Bottleneck diagnostic: streaming vs non-streaming", "bash scripts/step7_diag2.sh"),
+    ("step7", "Knob sweep, main (7 configurations x 2 workloads; 2 FP8-KV configs failed to start)", "bash scripts/step7_run.sh"),
+    ("step7_kv", "Knob sweep, Triton backend (FP8 KV cache and controls)",
+     "ONLY='triton_kv_bf16 triton_kv_fp8 triton_w8_kv_bf16 triton_w8_kv_fp8' SUFFIX=_kv bash scripts/step7_run.sh"),
+    ("step7_nc", "Knob sweep, prefix cache off (chunked prefill / batched tokens)",
+     "ONLY='nocache_nochunk nocache_bt512' WORKLOADS=longprefix SUFFIX=_nc bash scripts/step7_run.sh"),
 ]
 
 # Events the scripts did not capture. Times marked "approx" come from process elapsed time seen while monitoring.
@@ -28,13 +35,17 @@ MANUAL = [
               "pipe, GPU use during that time not verified, up to 10 minutes), the rerun finished in about 30 s and reproduced Step 1."),
     ("step4", "bitsandbytes 8-bit optimizer check (scripts/bnb_check.py): a few seconds."),
     ("step5", "First launch failed within 15 s on a command-line flag typo (no GPU work); fixed and rerun."),
+    ("step7", "The first knob sweep launch of the two FP8-KV configurations failed at server start (about 1 minute each of GPU "
+              "setup, no results). Their server logs are kept in logs/step7/."),
     ("step6", "Server/client smoke test (about 2 minutes) and a first full launch stopped after about 6 minutes because the "
               "rate list did not reach saturation; its results were discarded. The report step failed once for a missing "
               "matplotlib (no GPU work)."),
 ]
 
 
-EXTRA_LOGS = {"step6_fine": "logs/step6/run_info_fine.txt", "step6_engine": "logs/step6/run_info_engine_check.txt"}
+EXTRA_LOGS = {"step6_fine": "logs/step6/run_info_fine.txt", "step6_engine": "logs/step6/run_info_engine_check.txt",
+              "step7_diag": "logs/step7/run_info_diag.txt", "step7_diag2": "logs/step7/run_info_diag2.txt",
+              "step7_kv": "logs/step7/run_info_kv.txt", "step7_nc": "logs/step7/run_info_nc.txt"}
 
 
 def parse(step):
