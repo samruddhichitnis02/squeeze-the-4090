@@ -1,4 +1,4 @@
-# HW4.5 summary: training throughput and memory engineering
+# summary: training throughput and memory engineering
 
 Hardware: one NVIDIA GeForce RTX 4090 (24 GB, about 22.4 GB free after the Windows display), GPU UUID
 `GPU-c5ad1a63-b7c0-1838-5d8f-0df577ec82ce`. Model: `bert-base-uncased` fine-tuned on `cardiffnlp/tweet_eval` (sentiment), seed 2122.
@@ -16,7 +16,7 @@ Only one card was used, so the second card, the cross-card throughput comparison
 | Shortest wall-clock, full fine-tune (31,930 rows, 3 epochs) | bf16 autocast, batch 128 | 51 s = 0.0142 GPU-hours (baseline 152 s = 0.0421) | `results/step5/gpu_hours.md` |
 | Largest batch | gradient checkpointing, or Combination B | 2048 (baseline 512) | `results/step4/technique_table.md` |
 
-## Table HW4.5.1 (RTX 4090)
+## Table  (RTX 4090)
 
 Throughput and peak memory are measured at each technique's own max batch. Accuracy is test accuracy after a real fine-tune at the HW4 setting.
 
