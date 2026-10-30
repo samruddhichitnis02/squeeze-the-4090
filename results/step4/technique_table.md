@@ -1,4 +1,4 @@
-# Table HW4.5.1: memory techniques measured one at a time (RTX 4090)
+# Table 4.5.1: memory techniques measured one at a time (RTX 4090)
 
 Max batch = largest power-of-two batch that completed the sweep (fresh process per size, allocator capped at the usable VRAM so overflow is a real OOM). For gradient accumulation the number is the largest effective batch tested with micro-batch 64; it is not limited by memory.
 Throughput and peak memory are measured at that max batch. Eval accuracy is test accuracy after a real fine-tune at the HW4 setting: 4 epochs, batch 32, seed 2122 (same as the baseline fine-tune), best-validation-accuracy epoch.
@@ -13,7 +13,7 @@ Throughput and peak memory are measured at that max batch. Eval accuracy is test
 | Combination A: bf16 + 8-bit optimiser | 512 | 2278.9 | 13.24 | 65.87% |
 | Combination B: bf16 + checkpointing + 8-bit optimiser | 2048 | 1854.6 | 10.93 | 65.87% |
 
-# Extended table: the HW4 fine-tune itself (batch 32, 4 epochs)
+# Extended table: the fine-tune itself (batch 32, 4 epochs)
 
 Training samples/sec = 3,500 x 4 epochs / wall-clock, so it includes per-epoch validation time.
 
