@@ -1,0 +1,10 @@
+run started: 2026-10-29T17:35:15-07:00
+host: ADS-R15-836-04
+python: Python 3.12.16
+=== running engine=hf batch=1 ===
+=== running engine=vllm batch=1 ===
+=== running engine=vllm batch=8 ===
+=== running engine=vllm batch=32 ===
+=== running engine=hf batch=8 ===
+=== running engine=hf batch=32 ===
+run finished: 2026-10-29T17:44:09-07:00

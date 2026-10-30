@@ -1,0 +1,4 @@
+Explain, step by step, why decoding one token at a time on a GPU is limited by memory bandwidth rather than compute.
+I have a 24 GB GPU and a 7B parameter model. List what takes up memory at inference time and estimate each in GB.
+Write a one-paragraph explanation of continuous batching for a new engineer, then give one concrete example.
+Give me three experiments I could run to find out whether my LLM server is bottlenecked by prefill or decode.

@@ -1,0 +1,7 @@
+configuration,tokens_per_sec,p50_latency_ms,p95_latency_ms,requests_per_sec
+"HF pipeline, batch 1",59.1,2158.16,2239.54,0.462
+"vLLM, batch 1",221.31,579.64,598.25,1.729
+"vLLM, batch 8",1530.67,668.1,681.2,11.958
+"vLLM, batch 32",6272.07,652.88,655.89,49.001
+"HF pipeline, batch 8 (extra, not required)",390.41,2613.59,2699.03,3.05
+"HF pipeline, batch 32 (extra, not required)",1473.15,2775.0,2884.57,11.509
