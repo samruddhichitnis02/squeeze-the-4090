@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Model weights and checkpoints (large; regenerate with the run scripts)
+results/**/bert_sentiment/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+
+# Hugging Face / dataset caches
+.cache/
+huggingface/
+wandb/
+
+# Local tooling and installers
+.kiro/
+*.exe
+*.pdf
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Secrets
+.env
+*.key
