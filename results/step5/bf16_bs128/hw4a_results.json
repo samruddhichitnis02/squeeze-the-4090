@@ -1,0 +1,128 @@
+{
+  "row_range": [
+    0,
+    45614
+  ],
+  "n_rows": 45615,
+  "seed": 2122,
+  "split": {
+    "train": 31930,
+    "val": 6842,
+    "test": 6843
+  },
+  "settings": {
+    "epochs": 3,
+    "batch_size": 128,
+    "lr": 2e-05,
+    "max_len": 64,
+    "precision": "bf16-autocast",
+    "model": "bert-base-uncased",
+    "accum_steps": 1,
+    "micro_batch": 128,
+    "technique": {
+      "bf16": true,
+      "grad_ckpt": false,
+      "optim": "adamw"
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.7239020247053212,
+      "val_loss": 0.6242162663314259,
+      "val_acc": 0.7227418883367437,
+      "epoch_seconds": 16.172511763999864
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.5531825695559033,
+      "val_loss": 0.6313190476582853,
+      "val_acc": 0.7231803566208711,
+      "epoch_seconds": 15.58559631800017
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.4402009557229092,
+      "val_loss": 0.6368954416361164,
+      "val_acc": 0.7291727565039462,
+      "epoch_seconds": 15.813890897999954
+    }
+  ],
+  "best_val_acc_epoch": 3,
+  "best_val_loss_epoch": 1,
+  "epochs_past_best": 0,
+  "seconds_past_best": 0,
+  "test_loss": 0.6339832502778608,
+  "test_acc": 0.73184275902382,
+  "confusion_matrix": [
+    [
+      757,
+      262,
+      63
+    ],
+    [
+      353,
+      2185,
+      546
+    ],
+    [
+      78,
+      533,
+      2066
+    ]
+  ],
+  "per_class": {
+    "negative": {
+      "precision": 0.6372053872053872,
+      "recall": 0.699630314232902,
+      "f1": 0.6669603524229075,
+      "support": 1082
+    },
+    "neutral": {
+      "precision": 0.7332214765100671,
+      "recall": 0.7084954604409858,
+      "f1": 0.7206464379947229,
+      "support": 3084
+    },
+    "positive": {
+      "precision": 0.7723364485981309,
+      "recall": 0.7717594322002241,
+      "f1": 0.7720478325859492,
+      "support": 2677
+    }
+  },
+  "worst_class": "negative",
+  "misclassified_examples": [
+    [
+      "@user @user I dropped my iPhone in the beer cooler on the beach yesterday so I gotta get a new one tomorrow",
+      "negative",
+      "neutral"
+    ],
+    [
+      "You've got to love an email that starts with \"\"\"\"A significant snowstorm is likely, Tuesday...\"\"\"\" #ugh #winter \"",
+      "negative",
+      "positive"
+    ],
+    [
+      "Aus skipper Michael Clarke and fast bowler James Pattinson have been ruled out of Thursday's series- deciding final vs SL with injuries.",
+      "negative",
+      "neutral"
+    ],
+    [
+      "#NBA The Brooklyn Nets opener vs. the New York Knicks is postponed. It was originally scheduled for Thursday evening.",
+      "negative",
+      "neutral"
+    ],
+    [
+      "\"Obama secures Iran victory as 34th senator endorses nuclear deal  - Another victory for the march of Islam, well done Hussein Obama\"",
+      "negative",
+      "positive"
+    ]
+  ],
+  "n_misclassified_in_worst": 325,
+  "peak_mem_allocated_gb": 4.548186302185059,
+  "peak_mem_reserved_gb": 4.802734375,
+  "train_wallclock_seconds": 50.99655288699978,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "custom_inference_demo": {}
+}

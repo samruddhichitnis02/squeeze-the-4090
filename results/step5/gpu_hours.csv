@@ -1,0 +1,5 @@
+configuration,step_samples_per_sec,predicted_s,measured_training_s,measured_wallclock_s,gpu_hours,peak_mem_gb,best_epoch,test_acc
+"fp32, batch 32 (HW4 baseline)",669.8,143.0,144.3,151.6,0.04212,2.466,1,0.7282
+"bf16, batch 32",1090.0,87.9,97.6,100.6,0.02794,2.255,1,0.7278
+"bf16, batch 128",2087.1,45.9,47.6,51.0,0.01417,4.548,3,0.7318
+"fp32, batch 128",971.8,98.6,94.9,102.1,0.02836,6.088,3,0.7332

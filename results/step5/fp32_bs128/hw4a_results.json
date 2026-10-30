@@ -1,0 +1,128 @@
+{
+  "row_range": [
+    0,
+    45614
+  ],
+  "n_rows": 45615,
+  "seed": 2122,
+  "split": {
+    "train": 31930,
+    "val": 6842,
+    "test": 6843
+  },
+  "settings": {
+    "epochs": 3,
+    "batch_size": 128,
+    "lr": 2e-05,
+    "max_len": 64,
+    "precision": "fp32",
+    "model": "bert-base-uncased",
+    "accum_steps": 1,
+    "micro_batch": 128,
+    "technique": {
+      "bf16": false,
+      "grad_ckpt": false,
+      "optim": "adamw"
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.7200233397086586,
+      "val_loss": 0.6214691937858339,
+      "val_acc": 0.7239111370944168,
+      "epoch_seconds": 32.0449784249995
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.5502945280806831,
+      "val_loss": 0.6251473668652366,
+      "val_acc": 0.7246419175679626,
+      "epoch_seconds": 31.39784637199955
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.4375900657132917,
+      "val_loss": 0.6373421302039664,
+      "val_acc": 0.73194972230342,
+      "epoch_seconds": 31.41330586999902
+    }
+  ],
+  "best_val_acc_epoch": 3,
+  "best_val_loss_epoch": 1,
+  "epochs_past_best": 0,
+  "seconds_past_best": 0,
+  "test_loss": 0.6322128912884468,
+  "test_acc": 0.7331579716498612,
+  "confusion_matrix": [
+    [
+      745,
+      278,
+      59
+    ],
+    [
+      346,
+      2209,
+      529
+    ],
+    [
+      81,
+      533,
+      2063
+    ]
+  ],
+  "per_class": {
+    "negative": {
+      "precision": 0.6356655290102389,
+      "recall": 0.6885397412199631,
+      "f1": 0.6610470275066548,
+      "support": 1082
+    },
+    "neutral": {
+      "precision": 0.7314569536423841,
+      "recall": 0.7162775616083009,
+      "f1": 0.7237876802096985,
+      "support": 3084
+    },
+    "positive": {
+      "precision": 0.7781969068276122,
+      "recall": 0.770638774747852,
+      "f1": 0.7743993993993994,
+      "support": 2677
+    }
+  },
+  "worst_class": "negative",
+  "misclassified_examples": [
+    [
+      "@user Oh PLEASE! He\\u2019s been every political affiliation under the sun.    #RomneyRyan2012 and hey CBS one word: BENGHAZI now THAT\\u2019S news.",
+      "negative",
+      "neutral"
+    ],
+    [
+      "They may be mean but I guess they're not stupid...free TED but you have to pay for Amy Schumer - most unimpressed.",
+      "negative",
+      "neutral"
+    ],
+    [
+      "\"When you're as bad at campaigns as Scott Walker, you should just give up",
+      "negative",
+      "neutral"
+    ],
+    [
+      "#NBA The Brooklyn Nets opener vs. the New York Knicks is postponed. It was originally scheduled for Thursday evening.",
+      "negative",
+      "neutral"
+    ],
+    [
+      "\"Louis knocked Briana up in February \"\"they didn't meet til may\"\" \"\"it's not his kid\"\" \"\"it IS his kid\"\" me:",
+      "negative",
+      "neutral"
+    ]
+  ],
+  "n_misclassified_in_worst": 337,
+  "peak_mem_allocated_gb": 6.087587356567383,
+  "peak_mem_reserved_gb": 6.2734375,
+  "train_wallclock_seconds": 102.10685682700023,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "custom_inference_demo": {}
+}

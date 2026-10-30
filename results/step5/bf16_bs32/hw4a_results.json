@@ -1,0 +1,128 @@
+{
+  "row_range": [
+    0,
+    45614
+  ],
+  "n_rows": 45615,
+  "seed": 2122,
+  "split": {
+    "train": 31930,
+    "val": 6842,
+    "test": 6843
+  },
+  "settings": {
+    "epochs": 3,
+    "batch_size": 32,
+    "lr": 2e-05,
+    "max_len": 64,
+    "precision": "bf16-autocast",
+    "model": "bert-base-uncased",
+    "accum_steps": 1,
+    "micro_batch": 32,
+    "technique": {
+      "bf16": true,
+      "grad_ckpt": false,
+      "optim": "adamw"
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.6781436450870441,
+      "val_loss": 0.6170500729802546,
+      "val_acc": 0.7335574393452207,
+      "epoch_seconds": 32.71782368300046
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.4966112026274484,
+      "val_loss": 0.6628180703932832,
+      "val_acc": 0.7228880444314528,
+      "epoch_seconds": 33.32708729099977
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.323639440254623,
+      "val_loss": 0.7313913510438819,
+      "val_acc": 0.7294650686933645,
+      "epoch_seconds": 31.536638097999457
+    }
+  ],
+  "best_val_acc_epoch": 1,
+  "best_val_loss_epoch": 1,
+  "epochs_past_best": 2,
+  "seconds_past_best": 64.86372538899923,
+  "test_loss": 0.6190372585518639,
+  "test_acc": 0.7277509864094696,
+  "confusion_matrix": [
+    [
+      750,
+      239,
+      93
+    ],
+    [
+      357,
+      2123,
+      604
+    ],
+    [
+      71,
+      499,
+      2107
+    ]
+  ],
+  "per_class": {
+    "negative": {
+      "precision": 0.6366723259762309,
+      "recall": 0.6931608133086876,
+      "f1": 0.6637168141592921,
+      "support": 1082
+    },
+    "neutral": {
+      "precision": 0.742048234882908,
+      "recall": 0.6883916990920882,
+      "f1": 0.7142136248948696,
+      "support": 3084
+    },
+    "positive": {
+      "precision": 0.7514265335235378,
+      "recall": 0.7870750840493089,
+      "f1": 0.768837803320562,
+      "support": 2677
+    }
+  },
+  "worst_class": "negative",
+  "misclassified_examples": [
+    [
+      "Obama controlling where you get to live or move into, making choices for you under any Government Loans You may use",
+      "negative",
+      "neutral"
+    ],
+    [
+      "Does @user still believe that Ms. Angela Merkel is the \"real leader of the free world\"?  (Greeks may disagree",
+      "negative",
+      "neutral"
+    ],
+    [
+      "Omg worst last 10 days in a while. Looking forward to True Blood to cheer me up tonight.",
+      "negative",
+      "positive"
+    ],
+    [
+      "\"Srinagar, July 27: According to sources, a young boy, aged sixteen had gone missing on Eid day under mysterious...",
+      "negative",
+      "neutral"
+    ],
+    [
+      "The just-passed (this past Friday) PATH Act is expanding an IRA owner's ability to avoid the 10% penalty on a...",
+      "negative",
+      "neutral"
+    ]
+  ],
+  "n_misclassified_in_worst": 332,
+  "peak_mem_allocated_gb": 2.2548937797546387,
+  "peak_mem_reserved_gb": 2.482421875,
+  "train_wallclock_seconds": 100.57528013099909,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "custom_inference_demo": {}
+}

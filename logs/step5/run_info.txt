@@ -1,0 +1,8 @@
+run started: 2026-10-29T19:17:47-07:00
+host: ADS-R15-836-04
+python: Python 3.12.16
+=== [fp32_bs32] full fine-tune: --batch_size 32 ===
+=== [bf16_bs32] full fine-tune: --batch_size 32 --bf16 ===
+=== [bf16_bs128] full fine-tune: --batch_size 128 --bf16 ===
+=== [fp32_bs128] full fine-tune: --batch_size 128 ===
+run finished: 2026-10-29T19:25:28-07:00

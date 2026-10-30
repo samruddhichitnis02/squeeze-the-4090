@@ -1,0 +1,128 @@
+{
+  "row_range": [
+    0,
+    45614
+  ],
+  "n_rows": 45615,
+  "seed": 2122,
+  "split": {
+    "train": 31930,
+    "val": 6842,
+    "test": 6843
+  },
+  "settings": {
+    "epochs": 3,
+    "batch_size": 32,
+    "lr": 2e-05,
+    "max_len": 64,
+    "precision": "fp32",
+    "model": "bert-base-uncased",
+    "accum_steps": 1,
+    "micro_batch": 32,
+    "technique": {
+      "bf16": false,
+      "grad_ckpt": false,
+      "optim": "adamw"
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.6814337321519478,
+      "val_loss": 0.6173006997440197,
+      "val_acc": 0.736772873428822,
+      "epoch_seconds": 48.39469647599981
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.5008700051745986,
+      "val_loss": 0.6571860214103491,
+      "val_acc": 0.7244957614732535,
+      "epoch_seconds": 47.92838680999921
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.33021572476321165,
+      "val_loss": 0.7192506919441011,
+      "val_acc": 0.7331189710610932,
+      "epoch_seconds": 47.99293258399848
+    }
+  ],
+  "best_val_acc_epoch": 1,
+  "best_val_loss_epoch": 1,
+  "epochs_past_best": 2,
+  "seconds_past_best": 95.92131939399769,
+  "test_loss": 0.6197794357987849,
+  "test_acc": 0.7281893906181499,
+  "confusion_matrix": [
+    [
+      742,
+      255,
+      85
+    ],
+    [
+      340,
+      2148,
+      596
+    ],
+    [
+      68,
+      516,
+      2093
+    ]
+  ],
+  "per_class": {
+    "negative": {
+      "precision": 0.6452173913043479,
+      "recall": 0.6857670979667283,
+      "f1": 0.6648745519713262,
+      "support": 1082
+    },
+    "neutral": {
+      "precision": 0.7358684480986639,
+      "recall": 0.6964980544747081,
+      "f1": 0.7156421789105447,
+      "support": 3084
+    },
+    "positive": {
+      "precision": 0.754506128334535,
+      "recall": 0.7818453492715727,
+      "f1": 0.7679324894514767,
+      "support": 2677
+    }
+  },
+  "worst_class": "negative",
+  "misclassified_examples": [
+    [
+      "they were talking about the teen awards on Sunday and they mentioned ashton being sick :(",
+      "negative",
+      "neutral"
+    ],
+    [
+      "Some low hanging Monday fruit:  \"Sarah Palin says immigrants to the US should 'speak American'\"",
+      "negative",
+      "neutral"
+    ],
+    [
+      "am I the only one who could care less about the Ed Sheeran concert tomorrow?",
+      "negative",
+      "neutral"
+    ],
+    [
+      "@user Chris Evans should lose his voice more often if it means we get more listenable breakfast shows like this Monday and Tuesday's.",
+      "negative",
+      "neutral"
+    ],
+    [
+      "Amazon Prime day is black friday for people with a fixed address #PrimeDay",
+      "negative",
+      "neutral"
+    ]
+  ],
+  "n_misclassified_in_worst": 340,
+  "peak_mem_allocated_gb": 2.4663138389587402,
+  "peak_mem_reserved_gb": 3.01171875,
+  "train_wallclock_seconds": 151.62973784899987,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "custom_inference_demo": {}
+}
