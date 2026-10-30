@@ -20,6 +20,7 @@ STEPS = [
      "ONLY='triton_kv_bf16 triton_kv_fp8 triton_w8_kv_bf16 triton_w8_kv_fp8' SUFFIX=_kv bash scripts/step7_run.sh"),
     ("step7_nc", "Knob sweep, prefix cache off (chunked prefill / batched tokens)",
      "ONLY='nocache_nochunk nocache_bt512' WORKLOADS=longprefix SUFFIX=_nc bash scripts/step7_run.sh"),
+    ("step8", "Quantisation quality + speed (11 configurations; fp8_e5m2 failed to start)", "bash scripts/step8_run.sh"),
 ]
 
 # Events the scripts did not capture. Times marked "approx" come from process elapsed time seen while monitoring.
@@ -35,6 +36,9 @@ MANUAL = [
               "pipe, GPU use during that time not verified, up to 10 minutes), the rerun finished in about 30 s and reproduced Step 1."),
     ("step4", "bitsandbytes 8-bit optimizer check (scripts/bnb_check.py): a few seconds."),
     ("step5", "First launch failed within 15 s on a command-line flag typo (no GPU work); fixed and rerun."),
+    ("step8", "Smoke test of the FP8-KV and AWQ paths with tiny eval sizes (about 6 minutes), the KV range check "
+              "(src/kv_range.py) and two plain-PyTorch KV simulations (src/kv_fakequant.py, src/kv_fakequant_channel.py, "
+              "a few minutes each) were run outside the step8 script and are not in its timestamps; approx 0.25 GPU-hours together."),
     ("step7", "The first knob sweep launch of the two FP8-KV configurations failed at server start (about 1 minute each of GPU "
               "setup, no results). Their server logs are kept in logs/step7/."),
     ("step6", "Server/client smoke test (about 2 minutes) and a first full launch stopped after about 6 minutes because the "

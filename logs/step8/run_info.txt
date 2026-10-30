@@ -1,0 +1,16 @@
+run started: 2026-10-29T22:16:38-07:00
+host: ADS-R15-836-04
+python: Python 3.12.16
+=== [bf16_ref] quant_eval  ===
+=== [bf16_ref2] quant_eval  ===
+=== [fp16] quant_eval --dtype float16 ===
+=== [fp8_weights] quant_eval --quantization fp8 ===
+=== [triton_bf16] quant_eval --attention-backend TRITON_ATTN ===
+=== [triton_fp8kv] quant_eval --attention-backend TRITON_ATTN --kv-cache-dtype fp8 ===
+=== [triton_fp8kv_e5m2] quant_eval --attention-backend TRITON_ATTN --kv-cache-dtype fp8_e5m2 ===
+FAILED [triton_fp8kv_e5m2], see logs/step8/eval_triton_fp8kv_e5m2.log
+=== [triton_fp8kv_pth] quant_eval --attention-backend TRITON_ATTN --kv-cache-dtype fp8_per_token_head ===
+=== [triton_w8_fp8kv] quant_eval --attention-backend TRITON_ATTN --quantization fp8 --kv-cache-dtype fp8 ===
+=== [awq_int4] quant_eval --model Qwen/Qwen2.5-1.5B-Instruct-AWQ --dtype float16 ===
+=== [gptq_int4] quant_eval --model Qwen/Qwen2.5-1.5B-Instruct-GPTQ-Int4 --dtype float16 ===
+run finished: 2026-10-29T22:37:19-07:00

@@ -33,3 +33,6 @@ Thumbs.db
 # Secrets
 .env
 *.key
+
+# Downloaded evaluation datasets (re-create with src/prep_eval_data.py)
+data/

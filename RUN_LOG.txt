@@ -226,6 +226,26 @@ Software: Python 3.12.16, see logs/stepN/pip_freeze.txt for exact package versio
     === [nocache_nochunk] vllm serve --max-num-seqs 256 --no-enable-prefix-caching --no-enable-chunked-prefill ===
     === [nocache_bt512] vllm serve --max-num-seqs 256 --no-enable-prefix-caching --max-num-batched-tokens 512 ===
 
+[step8] Quantisation quality + speed (11 configurations; fp8_e5m2 failed to start)
+  command: bash scripts/step8_run.sh
+  started : 2026-10-29T22:16:38-07:00
+  finished: 2026-10-29T22:37:19-07:00
+  wall-clock: 20.7 min
+  gpu uuid: logs/step8/gpu_uuid*.txt
+  stages:
+    === [bf16_ref] quant_eval  ===
+    === [bf16_ref2] quant_eval  ===
+    === [fp16] quant_eval --dtype float16 ===
+    === [fp8_weights] quant_eval --quantization fp8 ===
+    === [triton_bf16] quant_eval --attention-backend TRITON_ATTN ===
+    === [triton_fp8kv] quant_eval --attention-backend TRITON_ATTN --kv-cache-dtype fp8 ===
+    === [triton_fp8kv_e5m2] quant_eval --attention-backend TRITON_ATTN --kv-cache-dtype fp8_e5m2 ===
+    FAILED [triton_fp8kv_e5m2], see logs/step8/eval_triton_fp8kv_e5m2.log
+    === [triton_fp8kv_pth] quant_eval --attention-backend TRITON_ATTN --kv-cache-dtype fp8_per_token_head ===
+    === [triton_w8_fp8kv] quant_eval --attention-backend TRITON_ATTN --quantization fp8 --kv-cache-dtype fp8 ===
+    === [awq_int4] quant_eval --model Qwen/Qwen2.5-1.5B-Instruct-AWQ --dtype float16 ===
+    === [gptq_int4] quant_eval --model Qwen/Qwen2.5-1.5B-Instruct-GPTQ-Int4 --dtype float16 ===
+
 Events not captured by the scripts (approximate, see GPU_HOURS_RECORD.md):
   [step2] Smoke tests of vLLM startup (several short runs, each a few minutes at most, three of them failed on environment problems: missing C compiler, nvcc/header mismatch). GPU time not logged; approx 5 to 10 minutes total.
   [step2] vLLM demo: first attempt failed immediately (missing __main__ guard), second attempt succeeded (two models, about 2.4 s generation each plus model load). Not timestamped; approx 3 minutes.
@@ -233,5 +253,6 @@ Events not captured by the scripts (approximate, see GPU_HOURS_RECORD.md):
   [step4] Baseline regression check of the edited train_bert.py: one call hit a 10-minute tool timeout (cause was the output pipe, GPU use during that time not verified, up to 10 minutes), the rerun finished in about 30 s and reproduced Step 1.
   [step4] bitsandbytes 8-bit optimizer check (scripts/bnb_check.py): a few seconds.
   [step5] First launch failed within 15 s on a command-line flag typo (no GPU work); fixed and rerun.
+  [step8] Smoke test of the FP8-KV and AWQ paths with tiny eval sizes (about 6 minutes), the KV range check (src/kv_range.py) and two plain-PyTorch KV simulations (src/kv_fakequant.py, src/kv_fakequant_channel.py, a few minutes each) were run outside the step8 script and are not in its timestamps; approx 0.25 GPU-hours together.
   [step7] The first knob sweep launch of the two FP8-KV configurations failed at server start (about 1 minute each of GPU setup, no results). Their server logs are kept in logs/step7/.
   [step6] Server/client smoke test (about 2 minutes) and a first full launch stopped after about 6 minutes because the rate list did not reach saturation; its results were discarded. The report step failed once for a missing matplotlib (no GPU work).

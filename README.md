@@ -43,6 +43,9 @@ run that is logged under [`logs/`](logs/) and saved under [`results/`](results/)
 | What limits a vLLM server under load? | The **Python API stack** at about 18 to 22k tokens/s; the bare engine reaches 28.7k | [Steps 6 and 7](#step-6--online-load-test-bf16-fp16-fp8) |
 | What does FP8 buy on this card? | About **16 to 25% lower latency at low load** and weights 1.7x smaller (1.73 vs 2.98 GiB); no throughput gain at saturation | [Step 6](#step-6--online-load-test-bf16-fp16-fp8) |
 | Which serving knob mattered most? | The concurrency cap (`max-num-seqs`) and prefix caching (on shared prefixes) | [Step 7](#step-7--serving-knobs-and-a-roofline-check) |
+| Does FP8 weight quantisation hurt quality? | No detectable loss in MMLU or GSM8K (resolution about 0.4 and 2 points); perplexity +1.0%; **14% less time per token at batch 1** | [Step 8](#step-8--quantisation-speed-and-measured-quality) |
+| What does INT4 weight-only cost? | **45% less time per token** at batch 1, but **-2.5 to -3.1 MMLU and -5.3 to -6.7 GSM8K points** | [Step 8](#step-8--quantisation-speed-and-measured-quality) |
+| Can the KV cache be stored in FP8 here? | **No: quality collapses** (GSM8K 74% → 3%, perplexity 10.7 → 30) even though capacity doubles | [Step 8](#step-8--quantisation-speed-and-measured-quality) |
 
 ---
 
@@ -55,11 +58,9 @@ flowchart LR
     S4 --> S5["Step 5<br/>GPU-hours of a<br/>full fine-tune"]
     S2["Step 2<br/>Serve an LLM:<br/>HF vs vLLM"] --> S6["Step 6<br/>Online load test<br/>bf16 / fp16 / fp8"]
     S6 --> S7["Step 7<br/>Serving knobs +<br/>roofline analysis"]
-    S7 --> S8["Step 8 (next)<br/>Quantisation vs<br/>accuracy"]
+    S7 --> S8["Step 8<br/>Quantisation vs<br/>measured quality"]
     classDef done fill:#d1fae5,stroke:#047857;
-    classDef next fill:#fef3c7,stroke:#b45309;
-    class S1,S2,S3,S4,S5,S6,S7 done;
-    class S8 next;
+    class S1,S2,S3,S4,S5,S6,S7,S8 done;
 ```
 
 Two tracks share one method: **change one thing, measure it with a script, keep the log, state what the number does and does not prove.**
@@ -293,12 +294,37 @@ Then the knobs, each changed alone, on two workloads (short chat prompts, and a 
 | `max-num-seqs` 256 → 64 → 32 | Peak throughput 19.2k → 10.5k → 6.0k tok/s; matches (sequences in flight) / (time per step) within 3%. Too low a cap shows up as queueing, not slow tokens. |
 | Prefix caching off (shared document) | Peak throughput **-57%**, SLA capacity 16 vs at least 64 req/s, TTFT p99 3,141 ms vs 29 ms at 32 req/s. Small effect on short prompts. |
 | Chunked prefill / batched-token limit | No effect while prefix caching hides the prefill. With caching off and the server overloaded, a 512-token budget cut time per token from 48 to 19 ms but raised median TTFT from 211 to 1,262 ms: a latency trade-off. |
-| FP8 KV cache | KV capacity **2.0x** (386k → 772k tokens) with no measurable speed change. Accuracy was **not measured**. Needed a different attention backend (see limits). |
+| FP8 KV cache | KV capacity **2.0x** (386k → 772k tokens) with no measurable speed change, **but model quality collapses** (Step 8: GSM8K 74% → 3%). Needed a different attention backend (see limits). |
 | FP8 weights | Lower low-load latency, no gain under load, +6.8% KV capacity. |
 
 **Roofline check:** a bf16 decode step reads about 3.09 GB, which is 3.06 ms at 1,008 GB/s; the measured step is 4.74 ms (65% of the bandwidth bound). FP8 weights read about 58% of the bytes
 but the step only fell to 81% of bf16's, consistent with a fixed per-step cost near 2 ms that does not shrink with weight size (an inference from two points, not a profile).
 Full write-up: [`results/step7/ANALYSIS.md`](results/step7/ANALYSIS.md).
+
+### Step 8 — Quantisation, speed and measured quality
+
+<p align="center"><img src="results/step8/quant_overview.png" alt="Quality change versus bf16 and speed versus quality" width="950"></p>
+
+Each configuration ran in its own vLLM process. Quality: WikiText-2 perplexity, MMLU (all 14,042 questions, zero-shot) and GSM8K (all 1,319 problems, chain-of-thought).
+Differences are **paired against bf16 question by question** with a standard error, and bf16 was run twice to measure pure run-to-run variation.
+
+| Configuration | Weights (GiB) | KV capacity (tokens) | Batch-1 ms/token | Perplexity | MMLU | GSM8K | Verdict |
+|---|---|---|---|---|---|---|---|
+| bf16 (reference) | 2.98 | 384,208 | 4.57 | 10.71 | 58.45% | 74.45% | reference |
+| fp16 | 2.98 | 383,200 | 4.60 | 10.70 | 58.29% | 75.13% | within noise |
+| **FP8 weights** | 1.73 | 422,912 | **3.91** | 10.81 | 58.24% | 75.13% | accuracy within noise, perplexity +1.0% |
+| **INT4 AWQ** | 1.10 | 454,944 | **2.53** | 11.62 | 55.36% | 69.14% | moderate loss (-3.1 / -5.3 pts) |
+| **INT4 GPTQ** | 1.10 | 453,856 | **2.54** | 11.97 | 55.93% | 67.78% | moderate loss (-2.5 / -6.7 pts) |
+| FP8 KV cache (Triton) | 2.98 | 768,736 | 4.25 | 30.42 | 52.44% | 3.11% | **broken** |
+| FP8 weights + FP8 KV (Triton) | 1.73 | 845,248 | 3.68 | 30.96 | 51.96% | 4.32% | **broken** |
+
+- **FP8 weights are the cheap win here:** 14% less time per token at batch 1, 10% more KV capacity, and no loss the tests could detect. At 256 concurrent sequences the speed advantage disappears.
+- **INT4 weight-only gives the largest speed-up** (time per token down 45%) because decode at small batch is limited by reading weights, but it has a clear, moderate quality cost. It stores 4-bit weights and computes in 16-bit: that is not FP4.
+- **The FP8 KV cache failed badly.** Outputs show repeated words and runaway loops. A plain-PyTorch simulation (no vLLM) reproduces it and pins it on the **keys**: quantising only values leaves perplexity at 10.86, quantising keys gives 26.
+  I ruled out range overflow (no value exceeds FP8's range), per-token-head scaling (worse) and per-channel static key scales (28.8). I do not have a confirmed mechanism.
+- **Noise floor:** two identical bf16 runs agree to 0.01 MMLU points and 0.23 GSM8K points, yet match word for word on only 46% of GSM8K answers, so "identical outputs" is not a usable test.
+
+Full tables, the paired statistics and the caveats (one model, one run per configuration except bf16; reference scores are my own measurements, not validated against a published figure): [`results/step8/ANALYSIS.md`](results/step8/ANALYSIS.md).
 
 ---
 
@@ -325,13 +351,13 @@ flowchart TD
     Q["What is hurting?"] --> A{"Training runs<br/>out of memory?"}
     A -- yes --> A1["Try bf16 first (faster AND smaller).<br/>Still short? gradient checkpointing<br/>(about 27% slower, 4x the max batch)."]
     A -- no --> B{"Serving: users<br/>wait too long at<br/>LOW load?"}
-    B -- yes --> B1["FP8 weights: about 16 to 25% lower<br/>latency here. Check quality first<br/>(Step 8)."]
+    B -- yes --> B1["FP8 weights: 14% less time per token at<br/>batch 1, accuracy unchanged (Step 8).<br/>INT4 weight-only: 45% less time per token,<br/>but -3 MMLU / -5 to -7 GSM8K points."]
     B -- no --> C{"Latency explodes<br/>as traffic grows?"}
     C -- yes --> C1{"Queue (TTFT) or<br/>slow tokens (TPOT)?"}
     C1 -- "TTFT grows" --> C2["Raise max-num-seqs; add API server<br/>processes; enable prefix caching<br/>if prompts share a prefix."]
     C1 -- "TPOT grows" --> C3["You are at the GPU's batch limit:<br/>more GPUs or a smaller model."]
     C -- no --> D{"Out of KV cache<br/>(long contexts)?"}
-    D -- yes --> D1["FP8 KV cache doubles capacity<br/>(accuracy not yet measured)."]
+    D -- yes --> D1["Do NOT use FP8 KV cache on this model<br/>(2x capacity, but quality collapses).<br/>Use a shorter context, fewer sequences,<br/>or a bigger GPU."]
     D -- no --> E["You are probably fine. Measure<br/>before changing anything."]
 ```
 
@@ -340,7 +366,7 @@ flowchart TD
 ## 8. Honest limits
 
 - **One GPU, one seed, one run per measurement.** Differences under roughly 15 to 20% at a single point are not distinguishable from noise. The assignment's second card and the cross-card ratio were not measured.
-- **Accuracy was only measured for the training techniques**, and only on small test sets (750 rows in Step 4; standard error about 1.7 points). **Accuracy of FP8 weights and FP8 KV cache was not measured yet** (Step 8).
+- **Quality was measured in Steps 1, 4, 5 (small test sets, one seed) and in Step 8 (the full 14,042-question MMLU, all 1,319 GSM8K problems and WikiText-2 perplexity, paired against bf16 with a measured noise floor).** All of Step 8 is one model (Qwen2.5-1.5B-Instruct) and one run per configuration except bf16.
 - **Absolute online capacity depends on the Python API stack**, not just the GPU. Compare configurations against each other, not against the engine ceiling.
 - **The FP8 KV cache runs use a different attention backend (Triton)**, because the default FlashAttention does not support it and the FlashInfer fallback failed to build here (a CUDA compiler/header version mismatch).
   Matching bf16 controls on the same backend are reported alongside. That backend looked about 15% faster at high load in one run; this is within noise, so no conclusion is drawn.
@@ -388,6 +414,10 @@ bash scripts/step6_run.sh          # online load test: bf16 / fp16 / fp8
 bash scripts/step6_engine_check.sh # engine-only control (no HTTP)
 bash scripts/step7_diag.sh; bash scripts/step7_diag2.sh   # what limited the plateau
 bash scripts/step7_run.sh          # knob sweep (two workloads)
+python src/prep_eval_data.py       # (training env) download MMLU, GSM8K, WikiText-2 into data/
+bash scripts/step8_run.sh          # quantisation: quality + speed per configuration
+python src/kv_fakequant.py; python src/kv_fakequant_channel.py; python src/kv_range.py   # FP8 KV simulations (training env)
+python src/make_quant_report.py results/step8
 
 # regenerate the README figures, simulations and interactive page from the saved results
 python src/make_readme_figures.py
@@ -421,6 +451,6 @@ prompts/                   the prompts used in the vLLM demo
 
 ## 11. What is next
 
-- **Step 8: quantisation with accuracy.** Compare FP16, BF16, FP8 weights, FP8 KV cache and 4-bit weight-only on speed, memory *and* measured quality (perplexity and a task score),
-  since "faster with the same quality" is the claim that needs support. This is where the open FP8-KV accuracy question gets answered.
+- **Open questions from Step 8:** why exactly the FP8 KV cache breaks this model (three explanations were ruled out, none confirmed); whether FP8 values with 16-bit keys, or other
+  KV schemes, work end to end; and whether the INT4 loss shrinks on a bigger model (a 7B model does not fit in the memory budget used here).
 - **Later:** a custom GPU kernel (Triton) benchmarked against the baselines, and, if hardware allows, a real FP4 run on a Blackwell GPU.

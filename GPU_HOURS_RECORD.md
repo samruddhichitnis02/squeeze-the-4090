@@ -17,7 +17,8 @@ Single card: NVIDIA GeForce RTX 4090 (own system). Script windows are taken from
 | step7 | Knob sweep, main (7 configurations x 2 workloads; 2 FP8-KV configs failed to start) | 2026-10-29 20:58 | 21:25 | 27.1 | 0.452 |
 | step7_kv | Knob sweep, Triton backend (FP8 KV cache and controls) | 2026-10-29 21:27 | 21:41 | 14.0 | 0.234 |
 | step7_nc | Knob sweep, prefix cache off (chunked prefill / batched tokens) | 2026-10-29 21:43 | 21:47 | 4.6 | 0.077 |
-| **Scripted total** | | | | **108.3** | **1.805** |
+| step8 | Quantisation quality + speed (11 configurations; fp8_e5m2 failed to start) | 2026-10-29 22:16 | 22:37 | 20.7 | 0.345 |
+| **Scripted total** | | | | **129.0** | **2.149** |
 
 ## Not captured by the run scripts (approximate)
 
@@ -27,6 +28,7 @@ Single card: NVIDIA GeForce RTX 4090 (own system). Script windows are taken from
 - **step4**: Baseline regression check of the edited train_bert.py: one call hit a 10-minute tool timeout (cause was the output pipe, GPU use during that time not verified, up to 10 minutes), the rerun finished in about 30 s and reproduced Step 1.
 - **step4**: bitsandbytes 8-bit optimizer check (scripts/bnb_check.py): a few seconds.
 - **step5**: First launch failed within 15 s on a command-line flag typo (no GPU work); fixed and rerun.
+- **step8**: Smoke test of the FP8-KV and AWQ paths with tiny eval sizes (about 6 minutes), the KV range check (src/kv_range.py) and two plain-PyTorch KV simulations (src/kv_fakequant.py, src/kv_fakequant_channel.py, a few minutes each) were run outside the step8 script and are not in its timestamps; approx 0.25 GPU-hours together.
 - **step7**: The first knob sweep launch of the two FP8-KV configurations failed at server start (about 1 minute each of GPU setup, no results). Their server logs are kept in logs/step7/.
 - **step6**: Server/client smoke test (about 2 minutes) and a first full launch stopped after about 6 minutes because the rate list did not reach saturation; its results were discarded. The report step failed once for a missing matplotlib (no GPU work).
 

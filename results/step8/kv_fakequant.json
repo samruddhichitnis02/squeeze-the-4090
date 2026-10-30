@@ -1,0 +1,60 @@
+{
+ "model": "Qwen/Qwen2.5-1.5B-Instruct",
+ "windows": 64,
+ "window": 1024,
+ "tokens_scored": 65472,
+ "results": [
+  {
+   "variant": "no quantisation (reference)",
+   "perplexity": 10.847178545854906
+  },
+  {
+   "variant": "e4m3 fixed scale, KV quantised",
+   "perplexity": 26.07663007723996
+  },
+  {
+   "variant": "e4m3 fixed scale, K quantised",
+   "perplexity": 26.09157331919313
+  },
+  {
+   "variant": "e4m3 fixed scale, V quantised",
+   "perplexity": 10.856417209290543
+  },
+  {
+   "variant": "e5m2 fixed scale, KV quantised",
+   "perplexity": 130.3142587446959
+  },
+  {
+   "variant": "e5m2 fixed scale, K quantised",
+   "perplexity": 127.03118257790166
+  },
+  {
+   "variant": "e5m2 fixed scale, V quantised",
+   "perplexity": 10.884336494148661
+  },
+  {
+   "variant": "e4m3 per_token_head scale, KV quantised",
+   "perplexity": 46.38699172723353
+  },
+  {
+   "variant": "e4m3 per_token_head scale, K quantised",
+   "perplexity": 46.16732201917571
+  },
+  {
+   "variant": "e4m3 per_token_head scale, V quantised",
+   "perplexity": 10.848480758789739
+  },
+  {
+   "variant": "e5m2 per_token_head scale, KV quantised",
+   "perplexity": 326.43778136727764
+  },
+  {
+   "variant": "e5m2 per_token_head scale, K quantised",
+   "perplexity": 323.3331042020305
+  },
+  {
+   "variant": "e5m2 per_token_head scale, V quantised",
+   "perplexity": 10.85949543446365
+  }
+ ]
+}
