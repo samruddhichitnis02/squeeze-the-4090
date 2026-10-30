@@ -1,0 +1,4 @@
+run started: 2026-10-29T20:26:58-07:00
+=== engine-only batch 256 [bf16] ===
+=== engine-only batch 256 [fp8] ===
+run finished: 2026-10-29T20:29:04-07:00

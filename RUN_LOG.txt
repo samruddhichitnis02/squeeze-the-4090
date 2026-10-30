@@ -10,7 +10,7 @@ Software: Python 3.12.16, see logs/stepN/pip_freeze.txt for exact package versio
   started : 2026-10-29T17:07:16-07:00
   finished: 2026-10-29T17:07:52-07:00
   wall-clock: 0.6 min
-  gpu uuid: logs/step1/gpu_uuid.txt
+  gpu uuid: logs/step1/gpu_uuid*.txt
   stages:
 
 [step2] HF pipeline vs vLLM serving benchmark
@@ -18,7 +18,7 @@ Software: Python 3.12.16, see logs/stepN/pip_freeze.txt for exact package versio
   started : 2026-10-29T17:35:15-07:00
   finished: 2026-10-29T17:44:09-07:00
   wall-clock: 8.9 min
-  gpu uuid: logs/step2/gpu_uuid.txt
+  gpu uuid: logs/step2/gpu_uuid*.txt
   stages:
     === running engine=hf batch=1 ===
     === running engine=vllm batch=1 ===
@@ -32,7 +32,7 @@ Software: Python 3.12.16, see logs/stepN/pip_freeze.txt for exact package versio
   started : 2026-10-29T18:24:22-07:00
   finished: 2026-10-29T18:25:36-07:00
   wall-clock: 1.2 min
-  gpu uuid: logs/step3/gpu_uuid.txt
+  gpu uuid: logs/step3/gpu_uuid*.txt
   stages:
     === batch size 8 ===
     === batch size 16 ===
@@ -49,7 +49,7 @@ Software: Python 3.12.16, see logs/stepN/pip_freeze.txt for exact package versio
   started : 2026-10-29T18:47:33-07:00
   finished: 2026-10-29T19:01:02-07:00
   wall-clock: 13.5 min
-  gpu uuid: logs/step4/gpu_uuid.txt
+  gpu uuid: logs/step4/gpu_uuid*.txt
   stages:
     === [baseline] sweep batch 8 ===
     === [baseline] sweep batch 16 ===
@@ -128,12 +128,44 @@ Software: Python 3.12.16, see logs/stepN/pip_freeze.txt for exact package versio
   started : 2026-10-29T19:17:47-07:00
   finished: 2026-10-29T19:25:28-07:00
   wall-clock: 7.7 min
-  gpu uuid: logs/step5/gpu_uuid.txt
+  gpu uuid: logs/step5/gpu_uuid*.txt
   stages:
     === [fp32_bs32] full fine-tune: --batch_size 32 ===
     === [bf16_bs32] full fine-tune: --batch_size 32 --bf16 ===
     === [bf16_bs128] full fine-tune: --batch_size 128 --bf16 ===
     === [fp32_bs128] full fine-tune: --batch_size 128 ===
+
+[step6] Online load test, bf16/fp16/fp8 (main grid)
+  command: bash scripts/step6_run.sh
+  started : 2026-10-29T19:59:49-07:00
+  finished: 2026-10-29T20:15:29-07:00
+  wall-clock: 15.7 min
+  gpu uuid: logs/step6/gpu_uuid*.txt
+  stages:
+    === [bf16] vllm serve --dtype bfloat16 ===
+    === [fp16] vllm serve --dtype float16 ===
+    === [fp8] vllm serve --dtype bfloat16 --quantization fp8 ===
+
+[step6_fine] Online load test, finer rate grid
+  command: RATES='112 144 160 176' SUFFIX=_fine bash scripts/step6_run.sh
+  started : 2026-10-29T20:20:43-07:00
+  finished: 2026-10-29T20:25:22-07:00
+  wall-clock: 4.7 min
+  gpu uuid: logs/step6/gpu_uuid*.txt
+  stages:
+    === [bf16] vllm serve --dtype bfloat16 ===
+    === [fp16] vllm serve --dtype float16 ===
+    === [fp8] vllm serve --dtype bfloat16 --quantization fp8 ===
+
+[step6_engine] Engine-only control (no HTTP), bf16 and fp8
+  command: bash scripts/step6_engine_check.sh
+  started : 2026-10-29T20:26:58-07:00
+  finished: 2026-10-29T20:29:04-07:00
+  wall-clock: 2.1 min
+  gpu uuid: logs/step6/gpu_uuid*.txt
+  stages:
+    === engine-only batch 256 [bf16] ===
+    === engine-only batch 256 [fp8] ===
 
 Events not captured by the scripts (approximate, see GPU_HOURS_RECORD.md):
   [step2] Smoke tests of vLLM startup (several short runs, each a few minutes at most, three of them failed on environment problems: missing C compiler, nvcc/header mismatch). GPU time not logged; approx 5 to 10 minutes total.
@@ -142,3 +174,4 @@ Events not captured by the scripts (approximate, see GPU_HOURS_RECORD.md):
   [step4] Baseline regression check of the edited train_bert.py: one call hit a 10-minute tool timeout (cause was the output pipe, GPU use during that time not verified, up to 10 minutes), the rerun finished in about 30 s and reproduced Step 1.
   [step4] bitsandbytes 8-bit optimizer check (scripts/bnb_check.py): a few seconds.
   [step5] First launch failed within 15 s on a command-line flag typo (no GPU work); fixed and rerun.
+  [step6] Server/client smoke test (about 2 minutes) and a first full launch stopped after about 6 minutes because the rate list did not reach saturation; its results were discarded. The report step failed once for a missing matplotlib (no GPU work).

@@ -10,6 +10,9 @@ STEPS = [
     ("step3", "Batch-size scaling to the memory wall", "bash scripts/step3_run.sh"),
     ("step4", "Memory techniques, one at a time", "bash scripts/step4_run.sh"),
     ("step5", "Full fine-tune GPU-hours check (4 configurations)", "bash scripts/step5_run.sh"),
+    ("step6", "Online load test, bf16/fp16/fp8 (main grid)", "bash scripts/step6_run.sh"),
+    ("step6_fine", "Online load test, finer rate grid", "RATES='112 144 160 176' SUFFIX=_fine bash scripts/step6_run.sh"),
+    ("step6_engine", "Engine-only control (no HTTP), bf16 and fp8", "bash scripts/step6_engine_check.sh"),
 ]
 
 # Events the scripts did not capture. Times marked "approx" come from process elapsed time seen while monitoring.
@@ -25,11 +28,17 @@ MANUAL = [
               "pipe, GPU use during that time not verified, up to 10 minutes), the rerun finished in about 30 s and reproduced Step 1."),
     ("step4", "bitsandbytes 8-bit optimizer check (scripts/bnb_check.py): a few seconds."),
     ("step5", "First launch failed within 15 s on a command-line flag typo (no GPU work); fixed and rerun."),
+    ("step6", "Server/client smoke test (about 2 minutes) and a first full launch stopped after about 6 minutes because the "
+              "rate list did not reach saturation; its results were discarded. The report step failed once for a missing "
+              "matplotlib (no GPU work)."),
 ]
 
 
+EXTRA_LOGS = {"step6_fine": "logs/step6/run_info_fine.txt", "step6_engine": "logs/step6/run_info_engine_check.txt"}
+
+
 def parse(step):
-    p = f"logs/{step}/run_info.txt"
+    p = EXTRA_LOGS.get(step, f"logs/{step}/run_info.txt")
     if not os.path.exists(p):
         return None
     txt = open(p).read()
@@ -65,7 +74,7 @@ for step, what, cmd in STEPS:
     mins = (t1 - t0).total_seconds() / 60
     total += mins
     lines += [f"  started : {t0.isoformat()}", f"  finished: {t1.isoformat()}", f"  wall-clock: {mins:.1f} min",
-              f"  gpu uuid: logs/{step}/gpu_uuid.txt", "  stages:"]
+              f"  gpu uuid: logs/{step.split('_')[0]}/gpu_uuid*.txt", "  stages:"]
     for l in txt.splitlines():
         if l.startswith("===") or "out of memory" in l or l.startswith("FAILED") or l.startswith("TIMEOUT"):
             lines.append(f"    {l}")

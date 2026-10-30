@@ -71,6 +71,8 @@ def main():
     ap.add_argument("--model", default="Qwen/Qwen2.5-1.5B-Instruct")
     ap.add_argument("--gpu-mem-util", type=float, default=0.6)
     ap.add_argument("--out", default="results/step2/raw")
+    ap.add_argument("--quantization", default=None, help="vLLM online quantization, e.g. fp8")
+    ap.add_argument("--tag", default="", help="suffix for the result filename")
     a = ap.parse_args()
 
     from transformers import AutoTokenizer
@@ -82,7 +84,7 @@ def main():
     if a.engine == "vllm":
         from vllm import LLM, SamplingParams
         llm = LLM(model=a.model, dtype="bfloat16", gpu_memory_utilization=a.gpu_mem_util,
-                  max_model_len=1024, seed=2122)
+                  max_model_len=1024, seed=2122, max_num_seqs=256, quantization=a.quantization)
         sp = SamplingParams(temperature=0.0, max_tokens=a.max_new_tokens, ignore_eos=True)
 
         def run(batch):
@@ -130,7 +132,7 @@ def main():
         import torch
         res["peak_mem_allocated_gb"] = torch.cuda.max_memory_allocated() / 1024**3
     os.makedirs(a.out, exist_ok=True)
-    path = os.path.join(a.out, f"{a.engine}_bs{B}.json")
+    path = os.path.join(a.out, f"{a.engine}_bs{B}{a.tag}.json")
     with open(path, "w") as f:
         json.dump(res, f, indent=2)
     print("RESULT", json.dumps({k: v for k, v in res.items() if k != "per_call_latency_ms"}))

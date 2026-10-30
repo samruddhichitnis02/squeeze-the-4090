@@ -1,0 +1,12 @@
+run started: 2026-10-29T20:20:43-07:00
+host: ADS-R15-836-04
+python: Python 3.12.16
+model: Qwen/Qwen2.5-1.5B-Instruct
+rates: 112 144 160 176
+=== [bf16] vllm serve --dtype bfloat16 ===
+[bf16] server up, starting load test
+=== [fp16] vllm serve --dtype float16 ===
+[fp16] server up, starting load test
+=== [fp8] vllm serve --dtype bfloat16 --quantization fp8 ===
+[fp8] server up, starting load test
+run finished: 2026-10-29T20:25:22-07:00

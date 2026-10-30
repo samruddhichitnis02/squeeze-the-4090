@@ -9,7 +9,10 @@ Single card: NVIDIA GeForce RTX 4090 (own system). Script windows are taken from
 | step3 | Batch-size scaling to the memory wall | 2026-10-29 18:24 | 18:25 | 1.2 | 0.021 |
 | step4 | Memory techniques, one at a time | 2026-10-29 18:47 | 19:01 | 13.5 | 0.225 |
 | step5 | Full fine-tune GPU-hours check (4 configurations) | 2026-10-29 19:17 | 19:25 | 7.7 | 0.128 |
-| **Scripted total** | | | | **31.9** | **0.532** |
+| step6 | Online load test, bf16/fp16/fp8 (main grid) | 2026-10-29 19:59 | 20:15 | 15.7 | 0.261 |
+| step6_fine | Online load test, finer rate grid | 2026-10-29 20:20 | 20:25 | 4.7 | 0.077 |
+| step6_engine | Engine-only control (no HTTP), bf16 and fp8 | 2026-10-29 20:26 | 20:29 | 2.1 | 0.035 |
+| **Scripted total** | | | | **54.3** | **0.905** |
 
 ## Not captured by the run scripts (approximate)
 
@@ -19,6 +22,7 @@ Single card: NVIDIA GeForce RTX 4090 (own system). Script windows are taken from
 - **step4**: Baseline regression check of the edited train_bert.py: one call hit a 10-minute tool timeout (cause was the output pipe, GPU use during that time not verified, up to 10 minutes), the rerun finished in about 30 s and reproduced Step 1.
 - **step4**: bitsandbytes 8-bit optimizer check (scripts/bnb_check.py): a few seconds.
 - **step5**: First launch failed within 15 s on a command-line flag typo (no GPU work); fixed and rerun.
+- **step6**: Server/client smoke test (about 2 minutes) and a first full launch stopped after about 6 minutes because the rate list did not reach saturation; its results were discarded. The report step failed once for a missing matplotlib (no GPU work).
 
 These unlogged items add roughly 0.5 to 0.75 GPU-hours on top of the scripted total (about 22 minutes for the stalled sweep, plus up to about 25 minutes of smoke tests, demo attempts and checks). They are estimates, not measurements.
 
