@@ -446,11 +446,3 @@ results/stepN/             tables, charts, raw JSON, and an ANALYSIS.md per step
 logs/stepN/                full logs, nvidia-smi captures, package versions, GPU UUID
 prompts/                   the prompts used in the vLLM demo
 ```
-
----
-
-## 11. What is next
-
-- **Open questions from Step 8:** why exactly the FP8 KV cache breaks this model (three explanations were ruled out, none confirmed); whether FP8 values with 16-bit keys, or other
-  KV schemes, work end to end; and whether the INT4 loss shrinks on a bigger model (a 7B model does not fit in the memory budget used here).
-- **Later:** a custom GPU kernel (Triton) benchmarked against the baselines, and, if hardware allows, a real FP4 run on a Blackwell GPU.
