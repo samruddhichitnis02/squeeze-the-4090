@@ -5,6 +5,4 @@
 - Decided [which techniques / precisions / settings to test].
 - Checked the numbers in the README and ANALYSIS.md files against the raw results in results/.
 
-## How I checked the AI's work
 
-- [How you verified it, e.g. reran a script, compared a table to the raw JSON, checked a claim against a source.]
