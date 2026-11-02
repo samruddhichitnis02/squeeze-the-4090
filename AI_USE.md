@@ -1,8 +1,5 @@
 ## Where I used AI
 
-- Chose the question and the direction of the project (what to measure and why).
-- Ran every script on my own machine and GPU (RTX 4090), and read the logs.
-- Decided [which techniques / precisions / settings to test].
-- Checked the numbers in the README and ANALYSIS.md files against the raw results in results/.
+- I used AI to help me understand concepts related to deep-learning inference and GPU performance, including batching, continuous batching, KV caching, memory usage, mixed precision, quantization, throughput, latency, roofline analysis, and serving systems such as vLLM.
 
-
+- The AI assistance was limited to explaining unfamiliar concepts in simpler language, answering conceptual questions, and helping me interpret terminology. The project code, experiment design, benchmark execution, measurements, plots, analysis, and conclusions were completed and verified by me.
